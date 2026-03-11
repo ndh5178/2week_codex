@@ -226,7 +226,6 @@ def google_callback() -> Any:
         'email': user_info.get('email', ''),
         'picture': user_info.get('picture', ''),
     }
-    flash('Google 계정으로 로그인되었습니다.', 'success')
     return redirect(session.pop('google_oauth_next', url_for('pokedex.team_builder_page')))
 
 
@@ -235,7 +234,6 @@ def logout() -> Any:
     session.pop('google_user', None)
     session.pop('google_oauth_next', None)
     session.pop('google_oauth_state', None)
-    flash('로그아웃되었습니다.', 'success')
     return redirect(_safe_next_url(request.form.get('next')))
 
 

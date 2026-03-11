@@ -761,3 +761,88 @@ h3 {
     grid-template-columns: 36px 1fr 34px;
   }
 }
+
+
+.is-hidden {
+  display: none;
+}
+
+.alert-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(26, 34, 56, 0.42);
+  z-index: 1000;
+}
+
+.alert-modal-backdrop.is-hidden {
+  display: none;
+}
+
+.alert-modal {
+  position: relative;
+  width: min(520px, 100%);
+  padding: 28px;
+  border-radius: 30px;
+  background: var(--card-strong);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 24px 60px rgba(26, 34, 56, 0.18);
+  backdrop-filter: blur(16px);
+}
+
+.alert-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(26, 34, 56, 0.08);
+  color: var(--ink);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.alert-modal-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.alert-modal-message {
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(26, 34, 56, 0.08);
+}
+
+.alert-modal-message strong {
+  display: block;
+  color: var(--ink);
+}
+
+.alert-modal-message p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.alert-modal-message.is-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(255, 255, 255, 0.96));
+}
+
+.alert-modal-message.is-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(255, 255, 255, 0.96));
+}
+
+.alert-modal-message.is-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(255, 255, 255, 0.96));
+}
+
+.alert-modal-action {
+  margin-top: 22px;
+  width: 100%;
+}

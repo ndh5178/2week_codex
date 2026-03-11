@@ -91,11 +91,49 @@
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-      <section class="flash-stack">
-        {% for category, message in messages %}
-        <article class="flash-card flash-{{ category }}">{{ message }}</article>
-        {% endfor %}
-      </section>
+      <div class="alert-modal-backdrop" id="alertModalBackdrop" role="presentation">
+        <div class="alert-modal" role="dialog" aria-modal="true" aria-labelledby="alertModalTitle">
+          <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="알림 닫기">?</button>
+          <p class="eyebrow">Notice</p>
+          <h2 id="alertModalTitle">알림</h2>
+          <div class="alert-modal-body" id="alertModalBody">
+            {% for category, message in messages %}
+            <article class="alert-modal-message is-{{ category }}">
+              <strong>
+                {% if category == 'success' %}완료{% elif category == 'warning' %}안내{% elif category == 'error' %}오류{% else %}알림{% endif %}
+              </strong>
+              <p>{{ message }}</p>
+            </article>
+            {% endfor %}
+          </div>
+          <button class="primary-action alert-modal-action" id="alertModalConfirm" type="button">확인</button>
+        </div>
+      </div>
+      <script>
+        (() => {
+          const backdrop = document.getElementById("alertModalBackdrop");
+          if (!backdrop) return;
+
+          const closeButton = document.getElementById("alertModalClose");
+          const confirmButton = document.getElementById("alertModalConfirm");
+          const closeModal = () => {
+            backdrop.classList.add("is-hidden");
+          };
+
+          closeButton?.addEventListener("click", closeModal);
+          confirmButton?.addEventListener("click", closeModal);
+          backdrop.addEventListener("click", (event) => {
+            if (event.target === backdrop) {
+              closeModal();
+            }
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !backdrop.classList.contains("is-hidden")) {
+              closeModal();
+            }
+          });
+        })();
+      </script>
       {% endif %}
     {% endwith %}
 

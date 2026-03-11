@@ -93,6 +93,10 @@ img {
   transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
+.top-link-form {
+  margin: 0;
+}
+
 .top-link,
 .primary-button,
 .secondary-button {
@@ -102,6 +106,13 @@ img {
 .top-link {
   color: var(--text-main);
   font-weight: 800;
+}
+
+.top-link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .hero-content {
