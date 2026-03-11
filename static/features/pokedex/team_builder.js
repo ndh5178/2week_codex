@@ -62,6 +62,7 @@ const DEFENSE_CHART = {
 
 const CUTE_BONUS_IDS = new Set([25, 35, 36, 37, 39, 52, 54, 58, 133, 172, 173, 174, 175, 183, 300, 312, 427, 446, 447, 702, 759, 778, 868, 926]);
 const COLOR_BONUS_IDS = new Set([6, 8, 10]);
+const bootstrap = window.teamBuilderBootstrap || {};
 
 const STYLE_CONFIGS = {
   offense: {
@@ -104,12 +105,30 @@ const teamGrid = document.getElementById("teamGrid");
 const styleGrid = document.getElementById("styleGrid");
 const generateTeamButton = document.getElementById("generateTeamButton");
 const teamCardTemplate = document.getElementById("teamCardTemplate");
+const saveStatusPill = document.getElementById("saveStatusPill");
+const saveCurrentTeamButton = document.getElementById("saveCurrentTeamButton");
+const saveInlineStatus = document.getElementById("saveInlineStatus");
+const savedTeamList = document.getElementById("savedTeamList");
+const savedEmptyText = document.getElementById("savedEmptyText");
+const savedTeamItemTemplate = document.getElementById("savedTeamItemTemplate");
+const teamBoard = document.getElementById("teamBoard");
+const teamNameInput = document.getElementById("teamNameInput");
+const saveTeamButton = document.getElementById("saveTeamButton");
+const teamBuilderConfig = window.teamBuilderConfig || { isLoggedIn: false, endpoints: {} };
 
 const state = {
   selectedStyle: "offense",
   pokemonPool: [],
   isLoading: false,
-  hasLoaded: false
+  isSaving: false,
+  hasLoaded: false,
+  isLoggedIn: Boolean(bootstrap.isLoggedIn),
+  saveEnabled: Boolean(bootstrap.saveEnabled),
+  saveApi: bootstrap.saveApi || "/api/pokedex/team-builder/save",
+  savedApi: bootstrap.savedApi || "/api/pokedex/team-builder/saved",
+  currentTeam: [],
+  currentSummary: null,
+  savedTeams: []
 };
 
 function parseCsv(text) {
@@ -336,6 +355,25 @@ function setStatus(message) {
   builderStatus.textContent = message;
 }
 
+function setSaveStatus(message, tone = "neutral") {
+  if (saveStatusPill) {
+    saveStatusPill.textContent = message;
+    saveStatusPill.classList.remove("is-success", "is-warning", "is-error");
+    if (tone === "success") {
+      saveStatusPill.classList.add("is-success");
+    }
+    if (tone === "warning") {
+      saveStatusPill.classList.add("is-warning");
+    }
+    if (tone === "error") {
+      saveStatusPill.classList.add("is-error");
+    }
+  }
+  if (saveInlineStatus) {
+    saveInlineStatus.textContent = message;
+  }
+}
+
 function setActiveStyle(styleKey) {
   state.selectedStyle = styleKey;
   for (const button of styleGrid.querySelectorAll(".style-card")) {
@@ -385,6 +423,27 @@ function evaluateCandidate(candidate, team, styleKey) {
   };
 }
 
+function pickRandomCandidate(scoredCandidates) {
+  const ranked = [...scoredCandidates].sort((left, right) => right.score - left.score);
+  const shortlist = ranked.slice(0, Math.min(6, ranked.length));
+  const minimumScore = shortlist[shortlist.length - 1]?.score ?? 0;
+  const weighted = shortlist.map((entry) => ({
+    ...entry,
+    weight: Math.max(1, Math.round(entry.score - minimumScore + 4))
+  }));
+  const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (const entry of weighted) {
+    roll -= entry.weight;
+    if (roll <= 0) {
+      return entry;
+    }
+  }
+
+  return weighted[0] || null;
+}
+
 function buildTeam(styleKey) {
   const config = STYLE_CONFIGS[styleKey];
   const pool = state.pokemonPool.filter(config.filter);
@@ -392,28 +451,27 @@ function buildTeam(styleKey) {
   const usedIds = new Set();
 
   while (selected.length < 6 && selected.length < pool.length) {
-    let bestChoice = null;
+    const candidates = [];
 
     for (const candidate of pool) {
       if (usedIds.has(candidate.id)) {
         continue;
       }
       const result = evaluateCandidate(candidate, selected, styleKey);
-      if (!bestChoice || result.score > bestChoice.score) {
-        bestChoice = {
-          candidate,
-          score: result.score,
-          rationale: result.rationale
-        };
-      }
+      candidates.push({
+        candidate,
+        score: result.score + Math.random() * 8,
+        rationale: result.rationale
+      });
     }
 
-    if (!bestChoice) {
+    const picked = pickRandomCandidate(candidates);
+    if (!picked) {
       break;
     }
 
-    usedIds.add(bestChoice.candidate.id);
-    selected.push({ ...bestChoice.candidate, rationale: bestChoice.rationale });
+    usedIds.add(picked.candidate.id);
+    selected.push({ ...picked.candidate, rationale: picked.rationale });
   }
 
   return selected;
@@ -487,7 +545,11 @@ function summarizeTeam(team, styleKey) {
       `평균 종족값 ${averageTotal}`,
       averageSpeed >= 95 ? "고속 전개" : averageBulk >= 250 ? "안정 운영" : "밸런스 운영"
     ],
-    insights: points
+    insights: points,
+    style: {
+      key: styleKey,
+      label: config.label
+    }
   };
 }
 
@@ -513,7 +575,28 @@ function getCoverageStory(team, styleKey, weaknessRanking) {
   return "같은 약점이 여러 번 겹치지 않도록 타입 조합을 흩어 배치했습니다.";
 }
 
+function normalizeTeamMember(member) {
+  return {
+    id: member.id,
+    speciesId: member.speciesId || member.id,
+    displayName: member.displayName || member.name || "포켓몬",
+    imageUrl: member.imageUrl || `${ARTWORK_BASE}/${member.id}.png`,
+    types: member.types || [],
+    rationale: member.rationale || "저장된 추천 팀 멤버입니다.",
+    stats: {
+      hp: member.stats?.hp || 0,
+      attack: member.stats?.attack || 0,
+      specialAttack: member.stats?.specialAttack || 0,
+      speed: member.stats?.speed || 0
+    },
+    total: member.total || 0
+  };
+}
+
 function renderTeam(team, summary) {
+  const normalizedTeam = team.map(normalizeTeamMember);
+  state.currentTeam = normalizedTeam;
+  state.currentSummary = summary;
   teamTitle.textContent = summary.title;
   summaryBadges.innerHTML = "";
   for (const badge of summary.badges) {
@@ -531,7 +614,7 @@ function renderTeam(team, summary) {
   }
 
   teamGrid.innerHTML = "";
-  team.forEach((pokemon, index) => {
+  normalizedTeam.forEach((pokemon, index) => {
     const fragment = teamCardTemplate.content.cloneNode(true);
     fragment.querySelector(".team-number").textContent = `#${String(index + 1).padStart(2, "0")}`;
     const typeList = fragment.querySelector(".team-type-list");
@@ -546,14 +629,14 @@ function renderTeam(team, summary) {
     image.src = pokemon.imageUrl;
     image.alt = `${pokemon.displayName} 이미지`;
     fragment.querySelector(".team-name").textContent = pokemon.displayName;
-    fragment.querySelector(".team-role").textContent = pokemon.rationale;
+    fragment.querySelector(".team-role").textContent = pokemon.rationale || "도감에서 직접 담은 포켓몬입니다.";
 
     const statBars = fragment.querySelector(".stat-bars");
     const displayedStats = [
-      ["HP", pokemon.stats.hp],
-      ["ATK", pokemon.stats.attack],
-      ["SPA", pokemon.stats.specialAttack],
-      ["SPD", pokemon.stats.speed]
+      ["HP", pokemon.stats?.hp ?? 0],
+      ["ATK", pokemon.stats?.attack ?? 0],
+      ["SPA", pokemon.stats?.specialAttack ?? 0],
+      ["SPD", pokemon.stats?.speed ?? 0]
     ];
     for (const [label, value] of displayedStats) {
       const row = document.createElement("div");
@@ -568,6 +651,206 @@ function renderTeam(team, summary) {
 
     teamGrid.appendChild(fragment);
   });
+}
+
+function renderSavedTeams(items) {
+  if (!savedTeamList || !savedEmptyText || !savedTeamItemTemplate) {
+    return;
+  }
+
+  state.savedTeams = items;
+  savedTeamList.innerHTML = "";
+  savedEmptyText.style.display = items.length ? "none" : "block";
+
+  for (const item of items) {
+    const fragment = savedTeamItemTemplate.content.cloneNode(true);
+    fragment.querySelector(".saved-team-title").textContent = item.summary?.title || "저장된 추천 팀";
+    fragment.querySelector(".saved-team-meta").textContent = formatSavedMeta(item);
+    fragment.querySelector(".saved-team-style").textContent = item.style?.label || "추천 팀";
+
+    const members = fragment.querySelector(".saved-team-members");
+    for (const member of item.team || []) {
+      const chip = document.createElement("span");
+      chip.className = "saved-member-chip";
+      chip.textContent = member.name || member.displayName || "포켓몬";
+      members.appendChild(chip);
+    }
+
+    const button = fragment.querySelector(".saved-team-button");
+    button.addEventListener("click", () => {
+      restoreSavedTeam(item);
+    });
+
+    savedTeamList.appendChild(fragment);
+  }
+}
+
+function formatSavedMeta(item) {
+  const dateText = item.createdAt
+    ? new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date(item.createdAt))
+    : "방금 저장";
+  const badgeText = (item.summary?.badges || []).slice(0, 2).join(" · ");
+  return badgeText ? `${dateText} · ${badgeText}` : dateText;
+}
+
+function restoreSavedTeam(item) {
+  const summary = {
+    title: item.summary?.title || `${item.style?.label || "추천 팀"} 다시 보기`,
+    badges: item.summary?.badges || [item.style?.label || "추천 팀"],
+    insights: item.summary?.insights || ["저장된 추천 팀을 다시 불러왔습니다."],
+    style: item.style || { key: "saved", label: item.style?.label || "저장 팀" }
+  };
+  const team = (item.team || []).map(normalizeTeamMember);
+  renderTeam(team, summary);
+  setStatus(`${item.style?.label || '저장된 추천 팀'}을 다시 불러왔습니다.`);
+  setSaveStatus("저장된 추천 팀을 현재 결과 영역에 불러왔습니다.", "success");
+  teamBoard?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function loadSavedTeams() {
+  if (!state.isLoggedIn || !state.saveEnabled) {
+    return;
+  }
+
+  try {
+    const response = await fetch(state.savedApi, {
+      headers: { "Accept": "application/json" }
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      setSaveStatus(payload.message || "저장된 팀을 읽지 못했습니다.", "warning");
+      return;
+    }
+    renderSavedTeams(payload.items || []);
+  } catch (error) {
+    console.error(error);
+    setSaveStatus("저장된 팀을 읽어오는 중 문제가 생겼습니다.", "warning");
+  }
+}
+
+async function saveRecommendedTeam() {
+  if (!state.currentSummary || state.currentTeam.length !== 6) {
+    setSaveStatus("먼저 추천 팀을 만든 뒤 저장해 주세요.", "warning");
+    return;
+  }
+  if (!state.isLoggedIn) {
+    setSaveStatus("로그인 후 현재 팀 저장 기능을 사용할 수 있습니다.", "warning");
+    return;
+  }
+  if (!state.saveEnabled) {
+    setSaveStatus("MongoDB 설정이 없어 현재 팀 저장을 진행할 수 없습니다.", "warning");
+    return;
+  }
+  if (state.isSaving) {
+    return;
+  }
+
+  state.isSaving = true;
+  setSaveStatus("현재 팀을 DB에 저장하는 중입니다...", "warning");
+
+  try {
+    const response = await fetch(state.saveApi, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        style: state.currentSummary.style,
+        summary: {
+          title: state.currentSummary.title,
+          badges: state.currentSummary.badges,
+          insights: state.currentSummary.insights
+        },
+        team: state.currentTeam.map((member) => ({
+          id: member.id,
+          speciesId: member.speciesId,
+          displayName: member.displayName,
+          types: member.types,
+          imageUrl: member.imageUrl,
+          rationale: member.rationale,
+          stats: member.stats,
+          total: member.total
+        }))
+      })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      setSaveStatus(payload.message || "현재 팀 저장에 실패했습니다.", "error");
+      return;
+    }
+
+    const nextItems = [payload.item, ...state.savedTeams.filter((item) => item.id !== payload.item.id)].slice(0, 8);
+    renderSavedTeams(nextItems);
+    setSaveStatus(payload.message || "현재 팀을 저장했습니다.", "success");
+  } catch (error) {
+    console.error(error);
+    setSaveStatus("현재 팀 저장 중 네트워크 오류가 발생했습니다.", "error");
+  } finally {
+    state.isSaving = false;
+  }
+}
+
+async function saveManagedTeam() {
+  if (!teamBuilderConfig.isLoggedIn || !saveTeamButton) {
+    return;
+  }
+  if (!state.currentSummary || state.currentTeam.length !== 6) {
+    setStatus("먼저 추천 팀을 만든 뒤 저장해 주세요.");
+    return;
+  }
+
+  const teamName = teamNameInput?.value.trim() || `${STYLE_CONFIGS[state.selectedStyle].label} 추천 팀`;
+  saveTeamButton.disabled = true;
+
+  try {
+    const response = await fetch(teamBuilderConfig.endpoints.create, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        team_name: teamName,
+        style: state.selectedStyle,
+        members: state.currentTeam.map((member) => ({
+          id: member.id,
+          speciesId: member.speciesId || member.id,
+          displayName: member.displayName,
+          imageUrl: member.imageUrl,
+          types: member.types,
+          rationale: member.rationale,
+          ability: member.ability || null,
+          stats: member.stats || null,
+          region: member.region || "",
+          name: member.name || ""
+        })),
+        summary: {
+          title: state.currentSummary.title,
+          badges: state.currentSummary.badges,
+          insights: state.currentSummary.insights
+        }
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "save-failed");
+    }
+
+    if (teamNameInput) {
+      teamNameInput.value = teamName;
+    }
+    setStatus(`'${teamName}' 팀을 저장했습니다.`);
+  } catch (error) {
+    console.error(error);
+    setStatus("팀 저장에 실패했습니다. 로그인 상태와 입력값을 확인해 주세요.");
+  } finally {
+    saveTeamButton.disabled = false;
+  }
 }
 
 async function ensureDataLoaded() {
@@ -595,13 +878,20 @@ async function generateTeam() {
     const team = buildTeam(state.selectedStyle);
     if (team.length < 6) {
       setStatus("조건에 맞는 포켓몬이 부족해서 6마리를 모두 채우지 못했습니다.");
+      setSaveStatus("6마리 조합이 완성되지 않아 저장할 수 없습니다.", "warning");
       return;
     }
     const summary = summarizeTeam(team, state.selectedStyle);
     renderTeam(team, summary);
-    setStatus(`${STYLE_CONFIGS[state.selectedStyle].label} 기준으로 팀 6마리를 조합했습니다.`);
+    setStatus(`${STYLE_CONFIGS[state.selectedStyle].label} 기준으로 랜덤 추천 팀 6마리를 조합했습니다.`);
+    if (state.isLoggedIn) {
+      setSaveStatus("현재 팀 저장 버튼을 누르면 이 추천 결과를 저장할 수 있습니다.", "success");
+    } else {
+      setSaveStatus("로그인 후 현재 팀 저장 기능을 사용할 수 있습니다.", "warning");
+    }
   } catch (error) {
     console.error(error);
+    setSaveStatus("팀 빌더 실행 중 오류가 발생했습니다.", "error");
   }
 }
 
@@ -611,11 +901,33 @@ styleGrid.addEventListener("click", (event) => {
     return;
   }
   setActiveStyle(button.dataset.style);
+  generateTeam();
 });
 
 generateTeamButton.addEventListener("click", () => {
   generateTeam();
 });
 
+if (saveCurrentTeamButton) {
+  saveCurrentTeamButton.addEventListener("click", () => {
+    saveRecommendedTeam();
+  });
+}
+
+if (saveTeamButton) {
+  saveTeamButton.addEventListener("click", () => {
+    saveManagedTeam();
+  });
+}
+
 setActiveStyle(state.selectedStyle);
+if (state.isLoggedIn && state.saveEnabled) {
+  setSaveStatus("현재 팀 저장 버튼으로 원하는 추천 결과를 저장할 수 있습니다.", "success");
+} else if (state.isLoggedIn) {
+  setSaveStatus("로그인되어 있지만 MongoDB 설정이 없어 현재 팀 저장은 비활성화 상태입니다.", "warning");
+} else {
+  setSaveStatus("로그인 후 현재 팀 저장 기능을 사용할 수 있습니다.", "warning");
+}
+loadSavedTeams();
 generateTeam();
+

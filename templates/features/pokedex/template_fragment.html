@@ -1,4 +1,4 @@
-﻿<div class="page-shell">
+<div class="page-shell">
   <header class="hero">
     <nav class="topbar">
       <div class="brand">
@@ -7,8 +7,16 @@
       </div>
       <div class="topbar-links">
         <a class="top-link" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더 열기</a>
+        <a class="top-link" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 후보로 가기</a>
+        {% if session.get('google_user') %}
+        <span class="top-link">{{ session['google_user']['name'] }} 님</span>
+        <form action="{{ url_for('pokedex.logout') }}" method="post" class="topbar-logout-form">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button class="top-link top-link-button" type="submit">로그아웃</button>
+        </form>
+        {% else %}
         <a class="top-link" href="{{ url_for('pokedex.login_page', next=url_for('pokedex.team_builder_page')) }}">Google 로그인</a>
-        <a class="top-link" href="#regions">포켓몬 도감 보기</a>
+        {% endif %}
       </div>
     </nav>
 
@@ -18,11 +26,11 @@
         <h1>오늘의 포켓몬과<br>포켓몬 도감</h1>
         <p class="hero-text">
           날짜에 따라 정해지는 오늘의 포켓몬을 보고, 아래에서는 포켓몬을 이미지와 함께 편하게 둘러볼 수 있어요.
-          카드 클릭 시 상세 정보 팝업도 바로 열리고, 일반 도감과 이로치 도감을 전환해서 볼 수 있습니다.
+          카드 클릭 시 상세 정보 팝업이 열리고, 특성을 골라 팀 후보에 담거나 포획으로 숨겨진 특성에 도전할 수 있습니다.
         </p>
         <div class="hero-actions">
           <a class="primary-button" href="#today">오늘의 포켓몬 보기</a>
-          <a class="secondary-button" href="#regions">포켓몬 도감 보기</a>
+          <a class="secondary-button" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 후보로 가기</a>
         </div>
         <p class="hero-note" id="dataStatus">도감 데이터를 불러오는 중입니다...</p>
       </div>
