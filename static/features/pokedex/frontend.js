@@ -340,9 +340,23 @@ const FORM_LABEL_MAP = {
   curly: "컬리폼",
   droopy: "드룹폼",
   stretch: "스트레치폼",
-  "combat-breed": "컴뱃폼",
-  "blaze-breed": "블레이즈폼",
-  "aqua-breed": "아쿠아폼"
+  "combat-breed": "컴뱃종",
+  "blaze-breed": "블레이즈종",
+  "aqua-breed": "아쿠아종",
+  totem: "토템폼",
+  active: "액티브모드",
+  neutral: "릴랙스모드",
+  primal: "원시회귀",
+  natural: "내추럴컷",
+  heart: "하트컷",
+  star: "스타컷",
+  diamond: "다이아컷",
+  debutante: "레이디컷",
+  matron: "마담컷",
+  dandy: "젠틀컷",
+  "la-reine": "퀸컷",
+  kabuki: "가부키컷",
+  pharaoh: "킹컷"
 };
 
 const dataStatus = document.getElementById("dataStatus");
@@ -550,16 +564,68 @@ function shouldExcludeSpecialForm(identifier) {
     /-spiky-eared$/,
     /-battle-bond$/,
     /-ash$/,
-    /-totem$/
+    /^raticate-totem-alola$/,
+    /-totem$/,
+    /^(pumpkaboo|gourgeist)-(small|large|super)$/,
+    /^aegislash-blade$/,
+    /^meloetta-pirouette$/,
+    /^wishiwashi-school$/,
+    /^mimikyu-busted$/,
+    /^cramorant-(gulping|gorging)$/,
+    /^morpeko-hangry$/,
+    /^eiscue-noice-face$/,
+    /^darmanitan(-galar)?-zen$/
   ];
 
   return excludedPatterns.some((pattern) => pattern.test(identifier));
+}
+
+function shouldFlattenToBaseForm(identifier, formSlug, formLabel, isDefault) {
+  if (/^(pumpkaboo|gourgeist)-average$/.test(identifier) && formSlug === "average") {
+    return true;
+  }
+
+  if (isDefault && /^(koraidon|miraidon)$/.test(identifier)) {
+    return true;
+  }
+
+  if (/^(kyogre|groudon|arceus|xerneas)$/.test(identifier)) {
+    return true;
+  }
+
+  if (/^furfrou-natural$/.test(identifier) && formSlug === "natural") {
+    return true;
+  }
+
+  return false;
+}
+
+function shouldPreferTranslatedFormName(formName) {
+  return !formName || /^[A-Za-z0-9 .''\-:]+$/.test(formName);
 }
 function translateFormSlug(slug) {
   return slug
     .split("-")
     .map((part) => FORM_LABEL_MAP[part] || titleCaseName(part))
     .join(" ");
+}
+
+function getRegionalFormDisplayName(baseName, formSlug) {
+  const slugParts = (formSlug || "").split("-").filter(Boolean);
+  const regionalPart = slugParts.find((part) => PREFIX_FORM_LABELS[part]);
+  if (!regionalPart) {
+    return null;
+  }
+
+  const remainingParts = slugParts.filter((part) => part !== regionalPart);
+  const translatedSuffix = remainingParts
+    .map((part) => FORM_LABEL_MAP[part] || titleCaseName(part))
+    .join(" ")
+    .trim();
+
+  return translatedSuffix
+    ? `${PREFIX_FORM_LABELS[regionalPart]} ${baseName} ${translatedSuffix}`.trim()
+    : `${PREFIX_FORM_LABELS[regionalPart]} ${baseName}`;
 }
 
 function getPrimaryImageUrl(id, mode) {
@@ -680,12 +746,12 @@ function getPokemonDisplayName(pokemon) {
   }
 
   const explicitFormName = formNameMap.get(pokemon.formId) || pokemon.formName;
-  const regionalPrefix = PREFIX_FORM_LABELS[pokemon.formSlug];
-  if (regionalPrefix) {
-    return `${regionalPrefix} ${baseName}`;
+  const regionalFormDisplayName = getRegionalFormDisplayName(baseName, pokemon.formSlug);
+  if (regionalFormDisplayName) {
+    return regionalFormDisplayName;
   }
 
-  if (explicitFormName) {
+  if (explicitFormName && !shouldPreferTranslatedFormName(explicitFormName)) {
     return `${baseName} ${explicitFormName}`.trim();
   }
 
@@ -811,8 +877,14 @@ function buildPokemonEntry(result) {
     return null;
   }
 
-  const formLabel = formMeta ? formNameMap.get(formMeta.formId) || "" : "";
-  const isForm = Boolean(formMeta && (!meta.isDefault || formMeta.formIdentifier || formLabel));
+  const rawFormLabel = formMeta ? formNameMap.get(formMeta.formId) || "" : "";
+  const rawFormSlug = formMeta?.formIdentifier || "";
+  const flattenToBaseForm = shouldFlattenToBaseForm(meta.identifier, rawFormSlug, rawFormLabel, meta.isDefault);
+  const formLabel = flattenToBaseForm ? "" : rawFormLabel;
+  const formSlug = flattenToBaseForm ? "" : rawFormSlug;
+  const isForm = flattenToBaseForm
+    ? false
+    : Boolean(formMeta && (!meta.isDefault || rawFormSlug || rawFormLabel));
   const formCategory = isForm ? getFormCategoryFromName(meta.identifier) : "base";
 
   return {
@@ -822,10 +894,10 @@ function buildPokemonEntry(result) {
     isDefault: meta.isDefault,
     isForm,
     formId: formMeta?.formId || null,
-    formSlug: formMeta?.formIdentifier || "",
+    formSlug,
     formName: formLabel,
     formCategory,
-    regionKey: getRegionInfoForPokemon({ speciesId: meta.speciesId, formSlug: formMeta?.formIdentifier || "" }).key
+    regionKey: getRegionInfoForPokemon({ speciesId: meta.speciesId, formSlug }).key
   };
 }
 function buildPokemonList(results, includeForms = false) {

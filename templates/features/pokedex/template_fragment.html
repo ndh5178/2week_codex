@@ -32,7 +32,7 @@
           <a class="primary-button" href="#today">오늘의 포켓몬 보기</a>
           <a class="secondary-button" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 후보로 가기</a>
         </div>
-        <p class="hero-note" id="dataStatus">도감 데이터를 불러오는 중입니다...</p>
+        <p class="hero-note" id="dataStatus" hidden aria-hidden="true"></p>
       </div>
 
       <section class="daily-panel" id="today" aria-live="polite">
@@ -81,8 +81,8 @@
         <label class="filter-box control-item" for="formFilter">
           <span class="search-label">폼</span>
           <select id="formFilter">
-            <option value="all">전체</option>
-            <option value="base" selected>기본만</option>
+            <option value="all" selected>전체</option>
+            <option value="base">기본만</option>
             <option value="forms">폼</option>
             <option value="mega">메가진화</option>
             <option value="gmax">거다이맥스</option>
