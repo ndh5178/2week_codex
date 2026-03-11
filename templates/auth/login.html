@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Login Setup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='features/pokedex/team_builder.css') }}">
+</head>
+<body class="builder-body login-body">
+  <div class="builder-shell">
+    <header class="builder-hero login-hero">
+      <nav class="builder-topbar">
+        <a class="brand-link" href="{{ url_for('main.index') }}">
+          <span class="brand-ball"></span>
+          <span>Pokemon Team Atelier</span>
+        </a>
+        <div class="topbar-actions">
+          <a class="ghost-link" href="{{ url_for('main.index') }}">도감 홈</a>
+          <a class="ghost-link" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더</a>
+          {% if google_oauth_configured %}
+          <a class="ghost-link" href="{{ url_for('pokedex.google_login', next=next_url) }}">바로 로그인</a>
+          {% endif %}
+        </div>
+      </nav>
+
+      <div class="hero-grid login-grid">
+        <section>
+          <p class="eyebrow">Google OAuth2</p>
+          <h1>설정 안내와<br>수동 점검 페이지입니다</h1>
+          <p class="hero-copy">
+            이제 실제 로그인 진입점은 `/login`이며, 환경변수가 준비된 상태라면 이 경로로 들어오자마자 Google 로그인 화면으로 이동합니다.
+            이 페이지는 설정값을 다시 확인하거나 오류 메시지를 확인할 때만 열면 됩니다.
+          </p>
+          <div class="hero-actions">
+            {% if google_oauth_configured %}
+            <a class="primary-action" href="{{ url_for('pokedex.google_login', next=next_url) }}">Google 로그인 시작</a>
+            <a class="secondary-action" href="{{ url_for('pokedex.login_page', next=next_url) }}">자동 로그인 테스트</a>
+            {% else %}
+            <a class="primary-action" href="#oauthSetup">설정 방법 보기</a>
+            {% endif %}
+            <a class="secondary-action" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더로 이동</a>
+          </div>
+        </section>
+
+        <aside class="identity-card">
+          <p class="eyebrow">Current State</p>
+          {% if user %}
+          <div class="identity-row">
+            {% if user.picture %}
+            <img class="identity-avatar" src="{{ user.picture }}" alt="{{ user.name }} 프로필 이미지">
+            {% else %}
+            <div class="identity-avatar placeholder">{{ user.name[:1] }}</div>
+            {% endif %}
+            <div>
+              <strong>{{ user.name }}</strong>
+              <p>{{ user.email }}</p>
+            </div>
+          </div>
+          <p class="identity-note">이미 로그인되어 있습니다. 필요하면 다시 로그인하거나 바로 팀 빌더를 사용할 수 있습니다.</p>
+          <form action="{{ url_for('pokedex.logout') }}" method="post">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="logout-button" type="submit">로그아웃</button>
+          </form>
+          {% else %}
+          <div class="config-grid">
+            <div class="config-chip {% if google_oauth_configured %}is-ready{% else %}is-pending{% endif %}">
+              <span>OAuth 상태</span>
+              <strong>{% if google_oauth_configured %}준비 완료{% else %}값 입력 필요{% endif %}</strong>
+            </div>
+            <div class="config-chip">
+              <span>리디렉션 URI</span>
+              <strong>{{ google_redirect_uri }}</strong>
+            </div>
+          </div>
+          <p class="identity-note">`.env`에 값이 들어 있으면 `/login` 또는 아래 버튼으로 즉시 Google 로그인 화면으로 이동합니다.</p>
+          {% endif %}
+        </aside>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <section class="flash-stack">
+        {% for category, message in messages %}
+        <article class="flash-card flash-{{ category }}">{{ message }}</article>
+        {% endfor %}
+      </section>
+      {% endif %}
+    {% endwith %}
+
+    <main class="builder-main login-main" id="oauthSetup">
+      <section class="selector-panel setup-panel">
+        <div class="panel-heading">
+          <p class="eyebrow">Setup Checklist</p>
+          <h2>Google OAuth 값은 사용자가 직접 발급받아 입력합니다</h2>
+          <p>아래 값은 코드에 하드코딩하지 않고 `.env`로 분리되어 있습니다. 배포 환경에서도 같은 이름으로 넣으면 됩니다.</p>
+        </div>
+        <div class="setup-code">
+<pre><code>SECRET_KEY=change-this-session-secret
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI={{ google_redirect_uri }}</code></pre>
+        </div>
+        <div class="status-strip">
+          <span class="status-dot"></span>
+          <p>샘플 파일은 프로젝트 루트의 `.env.example`과 `GOOGLE_OAUTH_SETUP.md`에 함께 정리해 두었습니다.</p>
+        </div>
+      </section>
+
+      <section class="results-panel instruction-panel">
+        <div class="results-header">
+          <div>
+            <p class="eyebrow">After Setup</p>
+            <h2>설정 후 동작 흐름</h2>
+          </div>
+        </div>
+        <article class="insight-card">
+          <ul class="insight-list">
+            <li>`/login`에 접속하면 바로 Google OAuth2 인증이 시작됩니다.</li>
+            <li>오류가 생겼을 때만 `/login/setup` 페이지에서 설정값과 리디렉션 URI를 다시 확인하면 됩니다.</li>
+            <li>로그인 후에는 팀 빌더 페이지에서 사용자 프로필을 확인할 수 있습니다.</li>
+            <li>팀 빌더는 스타일 선택 후 자동으로 6마리를 조합하고, 팀 시너지 설명도 함께 보여줍니다.</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
