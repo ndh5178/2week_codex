@@ -43,7 +43,18 @@
   rightHand: document.getElementById("rightHand"),
   leftBattleCard: document.getElementById("leftBattleCard"),
   rightBattleCard: document.getElementById("rightBattleCard"),
-  battleLog: document.getElementById("battleLog")
+  battleLog: document.getElementById("battleLog"),
+  battleArena: document.getElementById("battleArena"),
+  versusBadge: document.getElementById("versusBadge"),
+  battleCenterColumn: document.getElementById("battleCenterColumn"),
+  battleCenterSticky: document.getElementById("battleCenterSticky"),
+  matchResultBackdrop: document.getElementById("matchResultBackdrop"),
+  matchResultClose: document.getElementById("matchResultClose"),
+  matchResultConfirm: document.getElementById("matchResultConfirm"),
+  matchResultTitle: document.getElementById("matchResultTitle"),
+  matchResultHeading: document.getElementById("matchResultHeading"),
+  matchResultCopy: document.getElementById("matchResultCopy"),
+  matchResultMessage: document.getElementById("matchResultMessage")
 };
 
 const TYPE_LABEL = {
@@ -434,6 +445,56 @@ function clearBattleSelections() {
   state.battleCards = [null, null];
 }
 
+function focusBattleArena() {
+  meongseokElements.battleArena?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+function updateFloatingCenterColumn() {
+  const column = meongseokElements.battleCenterColumn;
+  const sticky = meongseokElements.battleCenterSticky;
+  const arena = meongseokElements.battleArena;
+
+  if (!column || !sticky || !arena) {
+    return;
+  }
+
+  sticky.classList.remove("is-floating", "is-bottom");
+  sticky.style.width = "";
+
+  if (window.innerWidth <= 1180) {
+    column.style.minHeight = "";
+    return;
+  }
+
+  const topOffset = 24;
+  const arenaRect = arena.getBoundingClientRect();
+  const columnRect = column.getBoundingClientRect();
+  const stickyHeight = sticky.offsetHeight;
+  const stickyWidth = columnRect.width;
+  const arenaTop = window.scrollY + arenaRect.top;
+  const columnTop = window.scrollY + columnRect.top;
+  const startY = Math.max(arenaTop, columnTop) - topOffset;
+  const stopY = arenaTop + arena.offsetHeight - stickyHeight - topOffset;
+  const currentY = window.scrollY;
+
+  column.style.minHeight = `${stickyHeight}px`;
+
+  if (currentY >= startY && currentY < stopY) {
+    sticky.classList.add("is-floating");
+    sticky.style.width = `${stickyWidth}px`;
+    return;
+  }
+
+  if (currentY >= stopY) {
+    sticky.classList.add("is-bottom");
+    sticky.style.width = "";
+    return;
+  }
+}
+
 function ensureBattleCards() {
   const leftCard = getSelectedCard(0);
   const rightCard = getSelectedCard(1);
@@ -687,6 +748,39 @@ function resetMatchPresentation() {
   state.latestMatchOutcome = null;
 }
 
+function closeMatchResultModal() {
+  meongseokElements.matchResultBackdrop?.classList.add("is-hidden");
+}
+
+function renderMatchResultModal() {
+  const backdrop = meongseokElements.matchResultBackdrop;
+  const message = meongseokElements.matchResultMessage;
+  if (!backdrop || !message) {
+    return;
+  }
+
+  const outcome = state.latestMatchOutcome;
+  message.classList.remove("is-win", "is-lose", "is-draw");
+
+  if (!outcome) {
+    meongseokElements.matchResultTitle.textContent = "READY";
+    meongseokElements.matchResultHeading.textContent = "배틀 준비 완료";
+    meongseokElements.matchResultCopy.textContent = "배틀이 끝나면 결과가 여기 표시됩니다.";
+    backdrop.classList.add("is-hidden");
+    return;
+  }
+
+  meongseokElements.matchResultTitle.textContent = outcome.title;
+  meongseokElements.matchResultHeading.textContent = outcome.result === "win"
+    ? "승리했습니다."
+    : outcome.result === "loss"
+      ? "패배했습니다."
+      : "무승부입니다.";
+  meongseokElements.matchResultCopy.textContent = outcome.copy;
+  message.classList.add(`is-${outcome.result}`);
+  backdrop.classList.remove("is-hidden");
+}
+
 function startMatch(useImportedTeam, fromRemote = false) {
   state.started = true;
   state.round = 0;
@@ -704,6 +798,7 @@ function startMatch(useImportedTeam, fromRemote = false) {
   if (state.mode === "ai") state.players[1].selectedId = chooseAiCardId();
   state.log.unshift("새 매치 시작: 포켓몬이 HP 0이 될 때까지 계속 전투하고, 쓰러지면 다음 포켓몬으로 이어집니다.");
   renderAll();
+  focusBattleArena();
   if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
 }
 
@@ -1090,6 +1185,8 @@ function renderAll() {
   renderBattleCard((state.battleCards[0] || state.displayBattleCards[0]), meongseokElements.leftBattleCard, "플레이어 1의 카드 대기 중", 0);
   renderBattleCard((state.battleCards[1] || state.displayBattleCards[1]), meongseokElements.rightBattleCard, "상대 카드 대기 중", 1);
   renderLog();
+  renderMatchResultModal();
+  updateFloatingCenterColumn();
 }
 
 window.addEventListener("team-builder:team-selected", (event) => {
@@ -1143,7 +1240,17 @@ if (meongseokElements.root) {
     renderLog();
     if (state.room.role === "host") broadcast("state-sync", serializeState());
   });
+  meongseokElements.matchResultClose?.addEventListener("click", closeMatchResultModal);
+  meongseokElements.matchResultConfirm?.addEventListener("click", closeMatchResultModal);
+  meongseokElements.matchResultBackdrop?.addEventListener("click", (event) => {
+    if (event.target === meongseokElements.matchResultBackdrop) {
+      closeMatchResultModal();
+    }
+  });
   renderAll();
+  updateFloatingCenterColumn();
+  window.addEventListener("scroll", updateFloatingCenterColumn, { passive: true });
+  window.addEventListener("resize", updateFloatingCenterColumn);
 }
 
 

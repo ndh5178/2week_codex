@@ -39,13 +39,6 @@
       color: #14213d;
     }
 
-    .game-entry__text {
-      margin: 14px 0 0;
-      max-width: 760px;
-      color: #4b5c7a;
-      line-height: 1.75;
-    }
-
     .game-entry__actions {
       display: flex;
       flex-wrap: wrap;
@@ -76,15 +69,11 @@
 </head>
 <body>
   <section class="game-entry">
-    <p class="game-entry__eyebrow">Featured Shortcuts</p>
-    <h1 class="game-entry__title">배틀과 팀 관리를 바로 시작하세요</h1>
-    <p class="game-entry__text">
-      배틀 페이지에서는 내가 만든 6마리 팀으로 대결을 진행할 수 있고,
-      내 팀 관리 페이지에서는 도감에서 담아둔 후보와 저장한 팀을 계속 정리할 수 있습니다.
-    </p>
+    <p class="game-entry__eyebrow">Shortcuts</p>
+    <h1 class="game-entry__title">배틀과 팀 관리</h1>
     <div class="game-entry__actions">
-      <a class="game-entry__button" href="{{ url_for('main.game') }}">배틀 페이지 열기</a>
-      <a class="game-entry__button game-entry__button--secondary" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 관리로 가기</a>
+      <a class="game-entry__button" href="{{ url_for('main.game') }}">배틀 페이지</a>
+      <a class="game-entry__button game-entry__button--secondary" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 관리</a>
     </div>
   </section>
 
