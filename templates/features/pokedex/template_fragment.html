@@ -74,7 +74,7 @@
           <span class="search-label">폼</span>
           <select id="formFilter">
             <option value="all">전체</option>
-            <option value="base">기본만</option>
+            <option value="base" selected>기본만</option>
             <option value="forms">폼</option>
             <option value="mega">메가진화</option>
             <option value="gmax">거다이맥스</option>
@@ -116,14 +116,15 @@
 
 <template id="regionSectionTemplate">
   <section class="region-section">
-    <div class="region-heading">
+    <button class="region-heading region-toggle" type="button" aria-expanded="false">
       <div>
         <p class="section-label region-label"></p>
         <h3 class="region-name"></h3>
       </div>
-      <span class="region-count"></span>
+    </button>
+    <div class="region-content is-hidden">
+      <div class="region-grid"></div>
     </div>
-    <div class="region-grid"></div>
   </section>
 </template>
 
@@ -142,5 +143,3 @@
     </div>
   </div>
 </div>
-
-
