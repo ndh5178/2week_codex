@@ -78,7 +78,7 @@ const state = {
   mode: "ai",
   difficulty: "easy",
   round: 0,
-  maxRounds: 3,
+  maxRounds: 6,
   started: false,
   importedTeam: [],
   importedTeamSource: null,
@@ -87,6 +87,7 @@ const state = {
     { name: "AI", score: 0, deck: [], selectedId: null }
   ],
   battleCards: [null, null],
+  displayBattleCards: [null, null],
   log: [],
   latestRoundSummary: null,
   latestMatchOutcome: null,
@@ -137,7 +138,13 @@ function updateRanking(modeKey, outcome) {
 }
 
 function cloneCard(card) {
-  return { ...card, types: [...card.types], used: false };
+  return {
+    ...card,
+    types: [...card.types],
+    used: false,
+    maxHp: card.maxHp ?? card.hp,
+    currentHp: card.currentHp ?? card.hp
+  };
 }
 
 function shuffle(list) {
@@ -151,6 +158,19 @@ function shuffle(list) {
 
 function buildRandomDeck(size) {
   return shuffle(DEFAULT_POOL).slice(0, size).map(cloneCard);
+}
+
+function buildPlayerDeck(size) {
+  if (state.importedTeam.length === 0) return buildRandomDeck(size);
+
+  const imported = state.importedTeam.map(cloneCard);
+  const importedIds = new Set(imported.map((card) => card.id));
+  const fillers = shuffle(DEFAULT_POOL)
+    .filter((card) => !importedIds.has(card.id))
+    .slice(0, Math.max(0, size - imported.length))
+    .map(cloneCard);
+
+  return [...imported, ...fillers].slice(0, size);
 }
 
 function normalizeTypes(value) {
@@ -185,7 +205,7 @@ function extractTeamArray(raw) {
 }
 
 function importTeamFromPayload(payload, sourceLabel) {
-  const team = extractTeamArray(payload).slice(0, 3).map(normalizeExternalMember);
+  const team = extractTeamArray(payload).slice(0, 6).map(normalizeExternalMember);
   if (team.length === 0) return false;
   state.importedTeam = team;
   state.importedTeamSource = sourceLabel;
@@ -216,7 +236,8 @@ function getTypeBonus(attackerTypes, defenderTypes) {
 
 function estimateValue(card, opponent) {
   const typeBonus = opponent ? getTypeBonus(card.types, opponent.types) : 0;
-  return card.attack * 1.15 + card.speed + card.skill + card.hp * 0.45 + typeBonus;
+  const effectiveHp = card.currentHp ?? card.hp;
+  return card.attack * 1.15 + card.speed + card.skill + effectiveHp * 0.45 + typeBonus;
 }
 
 function estimateCounterScore(card, opponent) {
@@ -224,13 +245,119 @@ function estimateCounterScore(card, opponent) {
   const myPressure = estimateValue(card, opponent);
   const enemyPressure = estimateValue(opponent, card);
   const speedEdge = card.speed > opponent.speed ? 10 : card.speed === opponent.speed ? 4 : 0;
-  const hpBuffer = Math.max(0, card.hp - opponent.attack * 0.4);
+  const effectiveHp = card.currentHp ?? card.hp;
+  const hpBuffer = Math.max(0, effectiveHp - opponent.attack * 0.4);
   return myPressure - enemyPressure * 0.45 + speedEdge + hpBuffer * 0.08;
 }
 
 function getSelectedCard(playerIndex) {
   const selectedId = state.players[playerIndex].selectedId;
   return state.players[playerIndex].deck.find((card) => card.id === selectedId && !card.used) || null;
+}
+
+function hasActiveBattle() {
+  return Boolean(state.battleCards[0] && state.battleCards[1]);
+}
+
+function getRemainingCards(playerIndex) {
+  return state.players[playerIndex].deck.filter((card) => !card.used);
+}
+
+function getCurrentBattleCard(playerIndex) {
+  return state.battleCards[playerIndex] || getSelectedCard(playerIndex);
+}
+
+function clearBattleSelections() {
+  state.players[0].selectedId = null;
+  state.players[1].selectedId = null;
+  state.battleCards = [null, null];
+}
+
+function ensureBattleCards() {
+  const leftCard = getSelectedCard(0);
+  const rightCard = getSelectedCard(1);
+  if (!leftCard || !rightCard) return null;
+  state.battleCards = [leftCard, rightCard];
+  state.displayBattleCards = [leftCard, rightCard];
+  return state.battleCards;
+}
+
+function canSelectCard(playerIndex, card) {
+  if (card.used || !state.started) return false;
+  if (hasActiveBattle()) {
+    return state.players[playerIndex].selectedId === card.id;
+  }
+  return true;
+}
+
+function calculateDamage(attacker, defender) {
+  const typeBonus = getTypeBonus(attacker.types, defender.types);
+  const base = attacker.attack * 0.34 + attacker.skill * 0.24 + attacker.speed * 0.12 + typeBonus;
+  return Math.max(8, Math.round(base));
+}
+
+function getBattleOrder(leftCard, rightCard) {
+  if (leftCard.speed === rightCard.speed) {
+    return leftCard.skill >= rightCard.skill ? [0, 1] : [1, 0];
+  }
+  return leftCard.speed > rightCard.speed ? [0, 1] : [1, 0];
+}
+
+function handleKnockout(winnerIndex, loserIndex) {
+  state.round += 1;
+  state.players[winnerIndex].score += 1;
+  state.battleCards[loserIndex].used = true;
+  state.battleCards[loserIndex].currentHp = 0;
+  state.latestRoundSummary = winnerIndex === 0
+    ? { result: "win", title: "ROUND WIN", copy: `${state.battleCards[winnerIndex].name}이(가) ${state.battleCards[loserIndex].name}을 쓰러뜨렸습니다.` }
+    : { result: "lose", title: "ROUND LOSE", copy: `${state.battleCards[loserIndex].name}이(가) 쓰러졌습니다. 다음 포켓몬을 준비하세요.` };
+
+  const loserHasNext = getRemainingCards(loserIndex).length > 0;
+  const winnerHasNext = getRemainingCards(winnerIndex).length > 0;
+
+  if (!loserHasNext || !winnerHasNext || state.players[winnerIndex].score >= state.maxRounds) {
+    finalizeMatchOutcome();
+    return;
+  }
+
+  clearBattleSelections();
+  if (state.mode === "ai") {
+    state.players[1].selectedId = chooseAiCardId();
+  }
+}
+
+function handleDoubleKnockout() {
+  state.round += 1;
+  state.battleCards[0].used = true;
+  state.battleCards[1].used = true;
+  state.battleCards[0].currentHp = 0;
+  state.battleCards[1].currentHp = 0;
+  state.latestRoundSummary = { result: "draw", title: "DOUBLE KO", copy: `${state.battleCards[0].name}과 ${state.battleCards[1].name}이(가) 동시에 쓰러졌습니다.` };
+
+  const leftHasNext = getRemainingCards(0).length > 0;
+  const rightHasNext = getRemainingCards(1).length > 0;
+
+  if (!leftHasNext && !rightHasNext) {
+    finalizeMatchOutcome();
+    return;
+  }
+
+  if (!leftHasNext) {
+    state.players[1].score += 1;
+    finalizeMatchOutcome();
+    return;
+  }
+
+  if (!rightHasNext) {
+    state.players[0].score += 1;
+    finalizeMatchOutcome();
+    return;
+  }
+
+  clearBattleSelections();
+  if (state.mode === "ai") {
+    state.players[1].selectedId = chooseAiCardId();
+  }
 }
 
 function getAiStrategyDescription() {
@@ -290,6 +417,7 @@ function serializeState() {
     started: state.started,
     players: state.players,
     battleCards: state.battleCards,
+    displayBattleCards: state.displayBattleCards,
     log: state.log,
     latestRoundSummary: state.latestRoundSummary,
     latestMatchOutcome: state.latestMatchOutcome,
@@ -306,6 +434,7 @@ function applyRemoteState(payload) {
   state.started = payload.started;
   state.players = payload.players;
   state.battleCards = payload.battleCards;
+  state.displayBattleCards = payload.displayBattleCards || payload.battleCards || [null, null];
   state.log = payload.log;
   state.latestRoundSummary = payload.latestRoundSummary || null;
   state.latestMatchOutcome = payload.latestMatchOutcome || null;
@@ -388,15 +517,17 @@ function startMatch(useImportedTeam, fromRemote = false) {
   state.round = 0;
   state.log = [];
   state.battleCards = [null, null];
+  state.displayBattleCards = [null, null];
   state.players[0].score = 0;
   state.players[1].score = 0;
   state.players[0].selectedId = null;
   state.players[1].selectedId = null;
   resetMatchPresentation();
-  state.players[0].deck = useImportedTeam && state.importedTeam.length > 0 ? state.importedTeam.map(cloneCard) : buildRandomDeck(3);
-  state.players[1].deck = buildRandomDeck(3);
+  state.players[0].deck = useImportedTeam ? buildPlayerDeck(6) : buildRandomDeck(6);
+  state.players[1].deck = buildRandomDeck(6);
   state.players[1].name = state.mode === "ai" ? "AI" : (state.room.role === "host" ? "게스트" : "플레이어 2");
   if (state.mode === "ai") state.players[1].selectedId = chooseAiCardId();
+  state.log.unshift("새 매치 시작: 포켓몬이 HP 0이 될 때까지 계속 전투하고, 쓰러지면 다음 포켓몬으로 이어집니다.");
   renderAll();
   if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
 }
@@ -411,7 +542,7 @@ function setMode(mode) {
 
 function setDifficulty(level) {
   state.difficulty = level;
-  if (state.mode === "ai" && state.started) {
+  if (state.mode === "ai" && state.started && !hasActiveBattle()) {
     state.players[1].selectedId = chooseAiCardId();
   }
   renderAll();
@@ -419,11 +550,25 @@ function setDifficulty(level) {
 }
 
 function selectCard(playerIndex, cardId, fromRemote = false) {
-  if (!state.started) return;
+  if (!state.started || hasActiveBattle()) return;
   const card = state.players[playerIndex].deck.find((entry) => entry.id === cardId && !entry.used);
   if (!card) return;
+
+  // Clear the previous KO/result presentation when the next Pokemon is chosen.
+  state.latestRoundSummary = null;
+  if (!state.latestMatchOutcome) {
+    state.displayBattleCards = [null, null];
+  }
+
   state.players[playerIndex].selectedId = cardId;
   if (state.mode === "ai" && playerIndex === 0) state.players[1].selectedId = chooseAiCardId();
+
+  const leftPreviewCard = getSelectedCard(0);
+  const rightPreviewCard = getSelectedCard(1);
+  if (leftPreviewCard && rightPreviewCard) {
+    state.displayBattleCards = [leftPreviewCard, rightPreviewCard];
+  }
+
   renderAll();
   if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
 }
@@ -433,14 +578,21 @@ function buildOutcomeState(result, title, copy) {
 }
 
 function getHpPercent(card) {
-  return Math.max(8, Math.min(100, Math.round((card.hp / 120) * 100)));
+  const currentHp = card.currentHp ?? card.hp;
+  const maxHp = card.maxHp ?? card.hp;
+  return Math.max(0, Math.min(100, Math.round((currentHp / Math.max(1, maxHp)) * 100)));
+}
+
+function getPrimaryType(card) {
+  return card.types[0] || "normal";
 }
 
 function getHpFillClass(card) {
   const percent = getHpPercent(card);
-  if (percent <= 33) return "meongseok-game__hp-fill is-low";
-  if (percent <= 66) return "meongseok-game__hp-fill is-mid";
-  return "meongseok-game__hp-fill";
+  const typeClass = `is-${getPrimaryType(card)}`;
+  if (percent <= 33) return `meongseok-game__hp-fill ${typeClass} is-low`;
+  if (percent <= 66) return `meongseok-game__hp-fill ${typeClass} is-mid`;
+  return `meongseok-game__hp-fill ${typeClass} is-high`;
 }
 
 function renderHpMeter(card, hidden = false) {
@@ -457,17 +609,31 @@ function renderHpMeter(card, hidden = false) {
   const fillClass = getHpFillClass(card);
   return `
     <div class="meongseok-game__hp-meter">
-      <div class="meongseok-game__hp-row"><span>HP</span><strong>${card.hp}</strong></div>
+      <div class="meongseok-game__hp-row"><span>HP</span><strong>${card.currentHp ?? card.hp} / ${card.maxHp ?? card.hp}</strong></div>
       <div class="meongseok-game__hp-track"><div class="${fillClass}" style="width: ${percent}%"></div></div>
     </div>
   `;
 }
 
-function getBattleOverlayLabel(playerIndex) {
-  if (!state.latestRoundSummary || state.latestRoundSummary.result === "draw") return "";
-  if (state.latestRoundSummary.result === "win" && playerIndex === 0) return "WIN";
-  if (state.latestRoundSummary.result === "lose" && playerIndex === 1) return "WIN";
-  return "";
+function getBattleOverlayState(playerIndex) {
+  if (!state.latestRoundSummary) return null;
+  if (state.latestRoundSummary.result === "draw") {
+    return { label: "DRAW", className: "is-draw" };
+  }
+  if (state.latestRoundSummary.result === "continue") {
+    return null;
+  }
+  if (state.latestRoundSummary.result === "win") {
+    return playerIndex === 0
+      ? { label: "WIN", className: "is-win" }
+      : { label: "LOSE", className: "is-lose" };
+  }
+  if (state.latestRoundSummary.result === "lose") {
+    return playerIndex === 0
+      ? { label: "LOSE", className: "is-lose" }
+      : { label: "WIN", className: "is-win" };
+  }
+  return null;
 }
 
 function finalizeMatchOutcome() {
@@ -477,49 +643,59 @@ function finalizeMatchOutcome() {
 
   if (left > right) {
     updateRanking(modeKey, "win");
-    state.latestMatchOutcome = buildOutcomeState("win", "WIN", `${state.players[0].name}이(가) ${left} : ${right}로 최종 승리했습니다.`);
+    state.latestMatchOutcome = buildOutcomeState("win", "WIN", `${state.players[0].name}이(가) ${left} : ${right}로 토너먼트 승리했습니다.`);
   } else if (right > left) {
     updateRanking(modeKey, "loss");
-    state.latestMatchOutcome = buildOutcomeState("loss", "LOSE", `${state.players[1].name}에게 ${left} : ${right}로 패배했습니다.`);
+    state.latestMatchOutcome = buildOutcomeState("loss", "LOSE", `${state.players[1].name}에게 ${left} : ${right}로 토너먼트 패배했습니다.`);
   } else {
     updateRanking(modeKey, "draw");
-    state.latestMatchOutcome = buildOutcomeState("draw", "DRAW", `최종 점수 ${left} : ${right}로 무승부입니다.`);
+    state.latestMatchOutcome = buildOutcomeState("draw", "DRAW", `최종 스코어 ${left} : ${right}로 승부를 가리지 못했습니다.`);
   }
 
   state.log.unshift(`최종 결과: ${state.latestMatchOutcome.copy}`);
 }
 
 function resolveRound(fromRemote = false) {
-  const leftCard = getSelectedCard(0);
-  const rightCard = getSelectedCard(1);
-  if (!leftCard || !rightCard) return;
+  const battle = hasActiveBattle() ? state.battleCards : ensureBattleCards();
+  if (!battle) return;
 
-  const leftPower = estimateValue(leftCard, rightCard) + getTypeBonus(leftCard.types, rightCard.types);
-  const rightPower = estimateValue(rightCard, leftCard) + getTypeBonus(rightCard.types, leftCard.types);
-  state.round += 1;
-  leftCard.used = true;
-  rightCard.used = true;
-  state.battleCards = [leftCard, rightCard];
+  const leftCard = battle[0];
+  const rightCard = battle[1];
+  state.displayBattleCards = [leftCard, rightCard];
+  const order = getBattleOrder(leftCard, rightCard);
+  const turnLogs = [];
 
-  let result = `라운드 ${state.round}: ${leftCard.name} ${leftPower} vs ${rightCard.name} ${rightPower}`;
-  if (leftPower > rightPower) {
-    state.players[0].score += 1;
-    result += `, ${state.players[0].name} 승리`;
-    state.latestRoundSummary = { result: "win", title: "ROUND WIN", copy: `${leftCard.name}이(가) ${rightCard.name}을 이겼습니다.` };
-  } else if (rightPower > leftPower) {
-    state.players[1].score += 1;
-    result += `, ${state.players[1].name} 승리`;
-    state.latestRoundSummary = { result: "lose", title: "ROUND LOSE", copy: `${rightCard.name}에게 밀렸습니다. 다음 라운드에서 만회하세요.` };
-  } else {
-    result += ", 무승부";
-    state.latestRoundSummary = { result: "draw", title: "ROUND DRAW", copy: `${leftCard.name}과 ${rightCard.name}이(가) 막상막하였습니다.` };
+  for (const attackerIndex of order) {
+    const defenderIndex = attackerIndex === 0 ? 1 : 0;
+    const attacker = state.battleCards[attackerIndex];
+    const defender = state.battleCards[defenderIndex];
+    if (!attacker || !defender || attacker.currentHp <= 0 || defender.currentHp <= 0) continue;
+
+    const damage = calculateDamage(attacker, defender);
+    defender.currentHp = Math.max(0, defender.currentHp - damage);
+    turnLogs.push(`${attacker.name}의 공격! ${defender.name}에게 ${damage} 데미지, 남은 HP ${defender.currentHp}`);
+
+    if (defender.currentHp <= 0) break;
   }
 
-  state.log.unshift(result);
-  state.players[0].selectedId = null;
-  state.players[1].selectedId = state.mode === "ai" && state.round < state.maxRounds ? chooseAiCardId() : null;
+  state.latestRoundSummary = null;
 
-  if (state.round >= state.maxRounds) finalizeMatchOutcome();
+  if (state.battleCards[0].currentHp <= 0 && state.battleCards[1].currentHp <= 0) {
+    handleDoubleKnockout();
+  } else if (state.battleCards[1].currentHp <= 0) {
+    handleKnockout(0, 1);
+  } else if (state.battleCards[0].currentHp <= 0) {
+    handleKnockout(1, 0);
+  } else {
+    state.latestRoundSummary = {
+      result: "continue",
+      title: "BATTLE CONTINUES",
+      copy: `${state.battleCards[0].name} HP ${state.battleCards[0].currentHp} / ${state.battleCards[0].maxHp}, ${state.battleCards[1].name} HP ${state.battleCards[1].currentHp} / ${state.battleCards[1].maxHp}`
+    };
+  }
+
+  state.log.unshift(...turnLogs.reverse());
+  meongseokElements.roundResult.textContent = turnLogs[turnLogs.length - 1] || "전투를 계속 진행하세요.";
   renderAll();
   if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
 }
@@ -570,20 +746,26 @@ function renderScoreboard() {
   meongseokElements.rightPanelTitle.textContent = state.players[1].name;
   meongseokElements.leftPlayerScore.textContent = String(state.players[0].score);
   meongseokElements.rightPlayerScore.textContent = String(state.players[1].score);
-  meongseokElements.leftPlayerDeckCount.textContent = `남은 카드 ${state.players[0].deck.filter((card) => !card.used).length}장`;
-  meongseokElements.rightPlayerDeckCount.textContent = `남은 카드 ${state.players[1].deck.filter((card) => !card.used).length}장`;
-  meongseokElements.roundIndicator.textContent = `${state.round} / ${state.maxRounds}`;
-  meongseokElements.turnIndicator.textContent = state.mode === "ai"
-    ? `AI ${state.difficulty.toUpperCase()} 난이도`
-    : state.room.role === "host"
-      ? "호스트가 경기 진행 중"
-      : state.room.role === "guest"
-        ? "게스트가 실시간 동기화 중"
-        : "플레이어 대전";
-  meongseokElements.leftSelectionState.textContent = getSelectedCard(0) ? "선택 완료" : "카드를 선택하세요.";
-  meongseokElements.rightSelectionState.textContent = state.mode === "ai"
-    ? (getSelectedCard(1) ? "AI 선택 완료" : "AI 대기 중")
-    : (getSelectedCard(1) ? "선택 완료" : "카드를 선택하세요.");
+  meongseokElements.leftPlayerDeckCount.textContent = `남은 포켓몬 ${getRemainingCards(0).length}마리`;
+  meongseokElements.rightPlayerDeckCount.textContent = `남은 포켓몬 ${getRemainingCards(1).length}마리`;
+  meongseokElements.roundIndicator.textContent = `KO ${state.round} / ${state.maxRounds}`;
+  meongseokElements.turnIndicator.textContent = hasActiveBattle()
+    ? `${state.battleCards[0].name} vs ${state.battleCards[1].name} 전투 중`
+    : state.mode === "ai"
+      ? `AI ${state.difficulty.toUpperCase()} 난이도`
+      : state.room.role === "host"
+        ? "호스트가 경기 진행 중"
+        : state.room.role === "guest"
+          ? "게스트가 실시간 동기화 중"
+          : "플레이어 대전";
+  meongseokElements.leftSelectionState.textContent = hasActiveBattle()
+    ? `전투 중 · HP ${state.battleCards[0].currentHp}`
+    : getSelectedCard(0) ? "선택 완료" : "카드를 선택하세요.";
+  meongseokElements.rightSelectionState.textContent = hasActiveBattle()
+    ? `전투 중 · HP ${state.battleCards[1].currentHp}`
+    : state.mode === "ai"
+      ? (getSelectedCard(1) ? "AI 선택 완료" : "AI 대기 중")
+      : (getSelectedCard(1) ? "선택 완료" : "카드를 선택하세요.");
 }
 
 function renderMatchBanner() {
@@ -634,18 +816,18 @@ function renderHand(playerIndex) {
           <p class="meongseok-game__card-text">${hidden ? "상대 카드 정보는 공개되지 않습니다." : card.summary}</p>
           ${renderHpMeter(card, hidden)}
           <div class="meongseok-game__stat-list">
-            <div class="meongseok-game__stat-item"><span>HP</span><strong>${hidden ? "?" : card.hp}</strong></div>
+            <div class="meongseok-game__stat-item"><span>HP</span><strong>${hidden ? "?" : `${card.currentHp ?? card.hp} / ${card.maxHp ?? card.hp}`}</strong></div>
             <div class="meongseok-game__stat-item"><span>ATK</span><strong>${hidden ? "?" : card.attack}</strong></div>
             <div class="meongseok-game__stat-item"><span>SPD</span><strong>${hidden ? "?" : card.speed}</strong></div>
             <div class="meongseok-game__stat-item"><span>SKL</span><strong>${hidden ? "?" : card.skill}</strong></div>
           </div>
         </div>
       </div>
-      <button class="meongseok-game__card-button${selected ? " is-selected" : ""}" type="button">${card.used ? "사용 완료" : selected ? "선택됨" : "이 카드 선택"}</button>
+      <button class="meongseok-game__card-button${selected ? " is-selected" : ""}" type="button">${card.used ? "사용 완료" : selected ? "선택됨" : "선택"}</button>
     `;
 
     const button = article.querySelector(".meongseok-game__card-button");
-    const disabled = card.used || isAi || (state.mode === "pvp" && ((state.room.role === "guest" && playerIndex === 0) || (state.room.role === "host" && playerIndex === 1))) || isGuestLocked;
+    const disabled = !canSelectCard(playerIndex, card) || isAi || (state.mode === "pvp" && ((state.room.role === "guest" && playerIndex === 0) || (state.room.role === "host" && playerIndex === 1))) || isGuestLocked;
     if (disabled) button.disabled = true;
     else {
       button.addEventListener("click", () => {
@@ -666,9 +848,9 @@ function renderBattleCard(card, element, emptyText, playerIndex) {
     return;
   }
 
-  const overlayLabel = getBattleOverlayLabel(playerIndex);
+  const overlayState = getBattleOverlayState(playerIndex);
   element.innerHTML = `
-    ${overlayLabel ? `<div class="meongseok-game__battle-overlay">${overlayLabel}</div>` : ""}
+    ${overlayState ? `<div class="meongseok-game__battle-overlay ${overlayState.className}">${overlayState.label}</div>` : ""}
     <div class="meongseok-game__battle-body">
       <div class="meongseok-game__card-image-wrap">
         <img class="meongseok-game__card-image" src="${card.image}" alt="${card.name}">
@@ -710,8 +892,8 @@ function renderAll() {
   meongseokElements.difficultyEasyButton.classList.toggle("is-active", state.difficulty === "easy");
   meongseokElements.difficultyNormalButton.classList.toggle("is-active", state.difficulty === "normal");
   meongseokElements.difficultyHardButton.classList.toggle("is-active", state.difficulty === "hard");
-  meongseokElements.resolveRoundButton.disabled = !(getSelectedCard(0) && getSelectedCard(1));
-  meongseokElements.roundResult.textContent = state.log[0] || "양쪽 플레이어가 카드를 고르면 라운드가 시작됩니다.";
+  meongseokElements.resolveRoundButton.disabled = !(hasActiveBattle() || (getSelectedCard(0) && getSelectedCard(1))) || Boolean(state.latestMatchOutcome);
+  meongseokElements.roundResult.textContent = state.log[0] || "양쪽 플레이어가 카드를 고르면 전투가 시작되고, HP 0이 될 때까지 계속 교전합니다.";
   renderStatus();
   renderRoomStatus();
   renderImportedTeamPreview();
@@ -721,8 +903,8 @@ function renderAll() {
   renderRankingList(meongseokElements.pvpRankingList, state.rankings.pvp);
   renderHand(0);
   renderHand(1);
-  renderBattleCard(state.battleCards[0], meongseokElements.leftBattleCard, "플레이어 1의 카드 대기 중", 0);
-  renderBattleCard(state.battleCards[1], meongseokElements.rightBattleCard, "상대 카드 대기 중", 1);
+  renderBattleCard((state.battleCards[0] || state.displayBattleCards[0]), meongseokElements.leftBattleCard, "플레이어 1의 카드 대기 중", 0);
+  renderBattleCard((state.battleCards[1] || state.displayBattleCards[1]), meongseokElements.rightBattleCard, "상대 카드 대기 중", 1);
   renderLog();
 }
 
@@ -770,4 +952,23 @@ if (meongseokElements.root) {
   });
   renderAll();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
