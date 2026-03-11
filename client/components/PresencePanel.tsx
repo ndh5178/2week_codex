@@ -18,3 +18,4 @@ export function PresencePanel({ users }: PresencePanelProps) {
     </aside>
   );
 }
+

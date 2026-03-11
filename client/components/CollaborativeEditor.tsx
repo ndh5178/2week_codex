@@ -86,3 +86,4 @@ export function CollaborativeEditor({ roomId, documentId }: CollaborativeEditorP
     </section>
   );
 }
+

@@ -64,3 +64,4 @@ function broadcastPresenceSnapshot(io: Server, roomId: string) {
 
   io.to(roomId).emit(SOCKET_EVENTS.PRESENCE_SNAPSHOT, snapshot);
 }
+

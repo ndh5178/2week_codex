@@ -24,3 +24,4 @@ Build a lightweight collaborative coding MVP with:
 2. Implement socket room flow in `server/`.
 3. Bind editor state to CRDT in `lib/collab/`.
 4. Connect presence UI in `client/components/`.
+

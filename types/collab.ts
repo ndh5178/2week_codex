@@ -70,3 +70,4 @@ export const SOCKET_EVENTS = {
   DOCUMENT_CHANGED: 'document-changed',
   DOCUMENT_SNAPSHOT: 'document-snapshot',
 } as const;
+

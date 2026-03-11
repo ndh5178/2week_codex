@@ -20,3 +20,4 @@
 - Update `types/collab.ts` first when changing payload shapes.
 - Keep room state authoritative on the server.
 - Keep editor rendering concerns out of `lib/collab/`.
+
