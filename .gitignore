@@ -7,3 +7,5 @@ __pycache__/
 node_modules/
 dist/
 .env
+data/team_builder_teams.json
+data/team_builder_drafts.json

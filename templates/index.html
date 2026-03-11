@@ -66,17 +66,25 @@
       text-decoration: none;
       box-shadow: 0 14px 28px rgba(239, 68, 68, 0.24);
     }
+
+    .game-entry__button--secondary {
+      background: rgba(20, 33, 61, 0.08);
+      color: #14213d;
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
   <section class="game-entry">
-    <p class="game-entry__eyebrow">Featured Game</p>
-    <h1 class="game-entry__title">포켓몬 카드 게임은 별도 페이지에서 플레이하세요</h1>
+    <p class="game-entry__eyebrow">Featured Shortcuts</p>
+    <h1 class="game-entry__title">배틀과 팀 관리를 바로 시작하세요</h1>
     <p class="game-entry__text">
-      AI 대전과 플레이어 대전이 가능한 카드 게임은 전용 게임 페이지로 분리되었습니다. 아래 버튼을 누르면 바로 `/game`으로 이동합니다.
+      배틀 페이지에서는 내가 만든 6마리 팀으로 대결을 진행할 수 있고,
+      내 팀 관리 페이지에서는 도감에서 담아둔 후보와 저장한 팀을 계속 정리할 수 있습니다.
     </p>
     <div class="game-entry__actions">
-      <a class="game-entry__button" href="{{ url_for('main.game') }}">게임 페이지 열기</a>
+      <a class="game-entry__button" href="{{ url_for('main.game') }}">배틀 페이지 열기</a>
+      <a class="game-entry__button game-entry__button--secondary" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 관리로 가기</a>
     </div>
   </section>
 

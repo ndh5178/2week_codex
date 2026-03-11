@@ -117,6 +117,9 @@ const deleteConfirmClose = document.getElementById("deleteConfirmClose");
 const deleteConfirmCancel = document.getElementById("deleteConfirmCancel");
 const deleteConfirmAccept = document.getElementById("deleteConfirmAccept");
 const deleteConfirmMessage = document.getElementById("deleteConfirmMessage");
+const teamNameInput = document.getElementById("teamNameInput");
+const saveTeamButton = document.getElementById("saveTeamButton");
+const teamBuilderConfig = window.teamBuilderConfig || { isLoggedIn: false, endpoints: {} };
 
 const state = {
   selectedStyle: "offense",
@@ -673,7 +676,6 @@ function renderTeam(team, summary) {
   const normalizedTeam = team.map(normalizeTeamMember);
   state.currentTeam = normalizedTeam;
   state.currentSummary = summary;
-
   teamTitle.textContent = summary.title;
   summaryBadges.innerHTML = "";
   for (const badge of summary.badges) {
@@ -706,14 +708,14 @@ function renderTeam(team, summary) {
     image.src = pokemon.imageUrl;
     image.alt = `${pokemon.displayName} 이미지`;
     fragment.querySelector(".team-name").textContent = pokemon.displayName;
-    fragment.querySelector(".team-role").textContent = pokemon.rationale;
+    fragment.querySelector(".team-role").textContent = pokemon.rationale || "도감에서 직접 담은 포켓몬입니다.";
 
     const statBars = fragment.querySelector(".stat-bars");
     const displayedStats = [
-      ["HP", pokemon.stats.hp],
-      ["ATK", pokemon.stats.attack],
-      ["SPA", pokemon.stats.specialAttack],
-      ["SPD", pokemon.stats.speed]
+      ["HP", pokemon.stats?.hp ?? 0],
+      ["ATK", pokemon.stats?.attack ?? 0],
+      ["SPA", pokemon.stats?.specialAttack ?? 0],
+      ["SPD", pokemon.stats?.speed ?? 0]
     ];
     for (const [label, value] of displayedStats) {
       const row = document.createElement("div");
@@ -877,6 +879,62 @@ async function saveRecommendedTeam() {
   }
 }
 
+async function saveManagedTeam() {
+  if (!teamBuilderConfig.isLoggedIn || !saveTeamButton) {
+    return;
+  }
+  if (!state.currentSummary || state.currentTeam.length !== 6) {
+    setStatus("먼저 추천 팀을 만든 뒤 저장해 주세요.");
+    return;
+  }
+
+  const teamName = teamNameInput?.value.trim() || `${STYLE_CONFIGS[state.selectedStyle].label} 추천 팀`;
+  saveTeamButton.disabled = true;
+
+  try {
+    const response = await fetch(teamBuilderConfig.endpoints.create, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        team_name: teamName,
+        style: state.selectedStyle,
+        members: state.currentTeam.map((member) => ({
+          id: member.id,
+          speciesId: member.speciesId || member.id,
+          displayName: member.displayName,
+          imageUrl: member.imageUrl,
+          types: member.types,
+          rationale: member.rationale,
+          ability: member.ability || null,
+          stats: member.stats || null,
+          region: member.region || "",
+          name: member.name || ""
+        })),
+        summary: {
+          title: state.currentSummary.title,
+          badges: state.currentSummary.badges,
+          insights: state.currentSummary.insights
+        }
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "save-failed");
+    }
+
+    if (teamNameInput) {
+      teamNameInput.value = teamName;
+    }
+    setStatus(`'${teamName}' 팀을 저장했습니다.`);
+  } catch (error) {
+    console.error(error);
+    setStatus("팀 저장에 실패했습니다. 로그인 상태와 입력값을 확인해 주세요.");
+  } finally {
+    saveTeamButton.disabled = false;
+  }
+}
+
 async function ensureDataLoaded() {
   if (state.hasLoaded || state.isLoading) {
     return;
@@ -938,6 +996,12 @@ if (saveCurrentTeamButton) {
   });
 }
 
+if (saveTeamButton) {
+  saveTeamButton.addEventListener("click", () => {
+    saveManagedTeam();
+  });
+}
+
 setActiveStyle(state.selectedStyle);
 if (state.isLoggedIn && state.saveEnabled) {
   setSaveStatus("현재 팀 저장 버튼으로 원하는 추천 결과를 저장할 수 있습니다.", "success");
@@ -946,7 +1010,6 @@ if (state.isLoggedIn && state.saveEnabled) {
 } else {
   setSaveStatus("로그인 후 현재 팀 저장 기능을 사용할 수 있습니다.", "warning");
 }
-
 loadSavedTeams();
 generateTeam();
 

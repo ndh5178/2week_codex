@@ -10,6 +10,9 @@ const POKEMON_TYPES_CSV_URL = "https://raw.githubusercontent.com/PokeAPI/pokeapi
 const POKEMON_FORMS_CSV_URL = "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon_forms.csv";
 const POKEMON_FORM_NAMES_CSV_URL = "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon_form_names.csv";
 const OFFICIAL_FORM_POKEDEX_DATA_URL = "/static/features/pokedex/official-form-pokedex-data.json";
+const TEAM_DRAFT_ENDPOINT = "/api/pokedex/team-builder/draft";
+const TEAM_DRAFT_MEMBER_ENDPOINT = "/api/pokedex/team-builder/draft/members";
+const TEAM_DRAFT_LIMIT = 6;
 
 const REGION_INFO = {
   1: { key: "kanto", label: "Kanto", nameKo: "관동 지방" },
@@ -375,6 +378,78 @@ let officialFormDescriptionMap = new Map();
 let currentModalPokemonId = null;
 let currentDexMode = "normal";
 const expandedRegions = new Set();
+
+async function fetchTeamDraft() {
+  const response = await fetch(TEAM_DRAFT_ENDPOINT);
+  if (!response.ok) {
+    throw new Error("team-draft-fetch-failed");
+  }
+  const data = await response.json();
+  return Array.isArray(data.team) ? data.team : [];
+}
+
+async function addPokemonToTeamDraft(pokemonSummary) {
+  const response = await fetch(TEAM_DRAFT_MEMBER_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(pokemonSummary)
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      reason: data.reason || "error",
+      count: Array.isArray(data.team) ? data.team.length : 0
+    };
+  }
+
+  return {
+    ok: true,
+    reason: "added",
+    count: Number(data.count || 0)
+  };
+}
+
+function renderTeamDraftStatus(message, isError = false) {
+  const statusNode = document.getElementById("modalTeamDraftStatus");
+  if (!statusNode) {
+    return;
+  }
+  statusNode.textContent = message;
+  statusNode.classList.toggle("is-error", isError);
+}
+
+async function refreshModalTeamDraftButton(pokemonSummary) {
+  const button = document.getElementById("addPokemonToTeamButton");
+  if (!button) {
+    return;
+  }
+
+  let teamDraft = [];
+  try {
+    teamDraft = await fetchTeamDraft();
+  } catch (error) {
+    console.error(error);
+  }
+  const alreadyAdded = teamDraft.some((member) => member.id === pokemonSummary.id);
+  const isFull = teamDraft.length >= TEAM_DRAFT_LIMIT;
+
+  button.disabled = alreadyAdded || isFull;
+  button.textContent = alreadyAdded ? "이미 팀에 담겼어요" : `팀에 추가 (${teamDraft.length}/${TEAM_DRAFT_LIMIT})`;
+
+  if (alreadyAdded) {
+    renderTeamDraftStatus("이 포켓몬은 이미 팀 후보에 담겨 있습니다.");
+    return;
+  }
+
+  if (isFull) {
+    renderTeamDraftStatus("팀 후보가 가득 찼습니다. 팀 빌더에서 정리해 주세요.", true);
+    return;
+  }
+
+  renderTeamDraftStatus("포켓몬을 최대 6마리까지 팀 후보에 담을 수 있습니다.");
+}
 
 function parseCsv(text) {
   const rows = [];
@@ -765,10 +840,10 @@ async function ensureAllFormsLoaded() {
     return;
   }
 
-  dataStatus.textContent = "? ???? ??? ???? ????...";
+  dataStatus.textContent = "전체 폼 도감 데이터를 불러오는 중입니다...";
   const response = await fetch(`${API_BASE}/pokemon?limit=2000&offset=0`);
   if (!response.ok) {
-    throw new Error("? ?? ??? ???? ?????.");
+    throw new Error("폼 도감 데이터를 불러오지 못했습니다.");
   }
 
   const data = await response.json();
@@ -781,7 +856,7 @@ async function ensureAllFormsLoaded() {
   hasLoadedForms = true;
   totalCount.textContent = String(allPokemon.length);
   populateFilterOptions();
-  dataStatus.textContent = `${getKoreanDateLabel()} ?? ?? ${basePokemon.length}??, ? ?? ? ${allPokemon.length}??? ??????.`;
+  dataStatus.textContent = `${getKoreanDateLabel()} 기준 기본 포켓몬 ${basePokemon.length}마리, 폼 포함 총 ${allPokemon.length}마리를 불러왔습니다.`;
 }
 
 
@@ -837,6 +912,29 @@ function buildAbilityMarkup(abilityInfoList) {
       <p class="ability-description">${abilityInfo.description}</p>
     </article>
   `).join("");
+}
+
+function getBaseStatMap(detail) {
+  const statMap = {};
+  for (const statEntry of detail.stats) {
+    statMap[statEntry.stat.name] = statEntry.base_stat;
+  }
+  return {
+    hp: statMap.hp || 0,
+    attack: statMap.attack || 0,
+    defense: statMap.defense || 0,
+    specialAttack: statMap["special-attack"] || 0,
+    specialDefense: statMap["special-defense"] || 0,
+    speed: statMap.speed || 0
+  };
+}
+
+function getBaseStatTotal(baseStats) {
+  return Object.values(baseStats).reduce((sum, value) => sum + Number(value || 0), 0);
+}
+
+function getCaptureChance(baseStatTotal) {
+  return Math.max(0.22, Math.min(0.78, 0.95 - baseStatTotal / 900));
 }
 
 async function renderDailyPokemon(pokemon) {
@@ -952,10 +1050,10 @@ function renderRegionSections(pokemonList) {
         <div class="region-heading">
           <div>
             <p class="section-label region-label">No Results</p>
-            <h3 class="region-name">??? ?? ???? ???</h3>
+            <h3 class="region-name">조건에 맞는 포켓몬이 없어요</h3>
           </div>
         </div>
-        <p class="section-copy">???? ??? ???? ?? ??? ???.</p>
+        <p class="section-copy">검색어나 필터 조건을 바꿔서 다시 찾아보세요.</p>
       </section>
     `;
     cardEntries = [];
@@ -1053,6 +1151,13 @@ async function openPokemonModal(pokemonId) {
     const regionName = getRegionLabelForPokemon(pokemon);
     const typeMarkup = detail.types.map((entry) => `<span class="type-chip type-${entry.type.name}">${TYPE_NAME_KO[entry.type.name] || entry.type.name}</span>`).join("");
     const abilityInfoList = await Promise.all(detail.abilities.map((entry) => getAbilityInfo(entry)));
+    const baseStats = getBaseStatMap(detail);
+    const baseStatTotal = getBaseStatTotal(baseStats);
+    const normalAbilities = abilityInfoList.filter((ability) => !ability.isHidden);
+    const hiddenAbilities = abilityInfoList.filter((ability) => ability.isHidden);
+    const abilityOptionsMarkup = normalAbilities.map((ability, index) => `
+      <option value="${index}">${ability.name}</option>
+    `).join("");
     const height = `${detail.height / 10}m`;
     const weight = `${detail.weight / 10}kg`;
 
@@ -1072,10 +1177,24 @@ async function openPokemonModal(pokemonId) {
           <div class="modal-meta">
             <span class="modal-fact">키: ${height}</span>
             <span class="modal-fact">몸무게: ${weight}</span>
+            <span class="modal-fact">종족값 합계: ${baseStatTotal}</span>
           </div>
           <p class="modal-description">${description}</p>
           <div class="abilities-list">${buildAbilityMarkup(abilityInfoList)}</div>
           <div class="modal-feature-area">
+            <div class="modal-team-actions">
+              <label class="modal-ability-field" for="modalAbilitySelect">
+                <span>추가할 특성</span>
+                <select id="modalAbilitySelect" ${normalAbilities.length ? "" : "disabled"}>
+                  ${abilityOptionsMarkup || '<option value="">일반 특성이 없습니다</option>'}
+                </select>
+              </label>
+              <div class="modal-team-button-row">
+                <button class="modal-nav-button modal-team-button" id="addPokemonToTeamButton" type="button" ${normalAbilities.length ? "" : "disabled"}>일반 추가</button>
+                <button class="modal-nav-button modal-catch-button" id="catchPokemonButton" type="button">포획하기</button>
+              </div>
+              <p class="modal-team-status" id="modalTeamDraftStatus" aria-live="polite"></p>
+            </div>
             <button class="modal-nav-button modal-wallpaper-button" id="openWallpaperGeneratorButton" type="button">배경화면 생성하기</button>
           </div>
           <div class="modal-nav">
@@ -1089,6 +1208,83 @@ async function openPokemonModal(pokemonId) {
     setPokemonImage(document.getElementById("modalPokemonImage"), pokemon.id, currentDexMode, `${displayName} 이미지`);
     document.getElementById("modalPrevButton")?.addEventListener("click", () => navigatePokemonModal(-1));
     document.getElementById("modalNextButton")?.addEventListener("click", () => navigatePokemonModal(1));
+    const teamButton = document.getElementById("addPokemonToTeamButton");
+    const catchButton = document.getElementById("catchPokemonButton");
+    const abilitySelect = document.getElementById("modalAbilitySelect");
+    const pokemonSummary = {
+      id: pokemon.id,
+      name: pokemon.name,
+      displayName,
+      imageUrl: getPrimaryImageUrl(pokemon.id, "normal"),
+      types: detail.types.map((entry) => entry.type.name),
+      region: regionName,
+      stats: baseStats
+    };
+
+    await refreshModalTeamDraftButton(pokemonSummary);
+    teamButton?.addEventListener("click", async () => {
+      const selectedAbility = normalAbilities[Number(abilitySelect?.value || 0)];
+      if (!selectedAbility) {
+        renderTeamDraftStatus("일반 특성을 먼저 선택해 주세요.", true);
+        return;
+      }
+      const result = await addPokemonToTeamDraft({
+        ...pokemonSummary,
+        ability: {
+          name: selectedAbility.name,
+          description: selectedAbility.description,
+          isHidden: false
+        }
+      });
+      if (result.ok) {
+        renderTeamDraftStatus(`'${displayName}'을(를) ${selectedAbility.name} 특성과 함께 팀 후보에 추가했습니다. (${result.count}/${TEAM_DRAFT_LIMIT})`);
+      } else if (result.reason === "duplicate") {
+        renderTeamDraftStatus("이 포켓몬은 이미 팀 후보에 담겨 있습니다.", true);
+      } else if (result.reason === "full") {
+        renderTeamDraftStatus("팀 후보가 가득 찼습니다. 팀 빌더에서 정리해 주세요.", true);
+      } else {
+        renderTeamDraftStatus("팀 후보에 추가하지 못했습니다. 잠시 후 다시 시도해 주세요.", true);
+      }
+      await refreshModalTeamDraftButton(pokemonSummary);
+    });
+    catchButton?.addEventListener("click", async () => {
+      const captureChance = getCaptureChance(baseStatTotal);
+      const captured = Math.random() < captureChance;
+      if (!captured) {
+        renderTeamDraftStatus(`포획에 실패했습니다. 포획 확률은 ${Math.round(captureChance * 100)}%였습니다.`, true);
+        return;
+      }
+
+      const selectedNormal = normalAbilities[Math.floor(Math.random() * Math.max(1, normalAbilities.length))] || null;
+      const selectedHidden = hiddenAbilities[Math.floor(Math.random() * Math.max(1, hiddenAbilities.length))] || null;
+      const useHidden = Boolean(selectedHidden && selectedNormal && Math.random() < 0.5);
+      const chosenAbility = useHidden ? selectedHidden : (selectedNormal || selectedHidden);
+
+      if (!chosenAbility) {
+        renderTeamDraftStatus("얻을 수 있는 특성 정보가 없습니다.", true);
+        return;
+      }
+
+      const result = await addPokemonToTeamDraft({
+        ...pokemonSummary,
+        ability: {
+          name: chosenAbility.name,
+          description: chosenAbility.description,
+          isHidden: Boolean(chosenAbility.isHidden)
+        }
+      });
+
+      if (result.ok) {
+        renderTeamDraftStatus(`포획 성공. '${displayName}'의 ${chosenAbility.isHidden ? "숨겨진 " : ""}${chosenAbility.name} 특성을 획득했습니다. (${result.count}/${TEAM_DRAFT_LIMIT})`);
+      } else if (result.reason === "duplicate") {
+        renderTeamDraftStatus("이 포켓몬은 이미 팀 후보에 담겨 있습니다.", true);
+      } else if (result.reason === "full") {
+        renderTeamDraftStatus("팀 후보가 가득 찼습니다. 팀 빌더에서 정리해 주세요.", true);
+      } else {
+        renderTeamDraftStatus("포획 결과를 팀 후보에 반영하지 못했습니다.", true);
+      }
+      await refreshModalTeamDraftButton(pokemonSummary);
+    });
     document.dispatchEvent(new CustomEvent("pokemon-modal-rendered", {
       detail: {
         pokemon: {
@@ -1181,7 +1377,7 @@ formFilter.addEventListener("change", async () => {
       await ensureAllFormsLoaded();
     } catch (error) {
       console.error(error);
-      dataStatus.textContent = "? ???? ???? ?????. ?? ??? ??????.";
+      dataStatus.textContent = "폼 데이터를 불러오지 못했습니다. 기본 도감으로 돌아갑니다.";
       formFilter.value = "base";
     }
   }
