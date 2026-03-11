@@ -64,6 +64,26 @@ const TYPE_ID_TO_KEY = {
   18: "fairy"
 };
 
+const TYPE_ACCENT_MAP = {
+  normal: "#94a3b8",
+  fire: "#f97316",
+  water: "#2563eb",
+  electric: "#facc15",
+  grass: "#16a34a",
+  ice: "#06b6d4",
+  fighting: "#b91c1c",
+  poison: "#9333ea",
+  ground: "#a16207",
+  flying: "#6366f1",
+  psychic: "#ec4899",
+  bug: "#65a30d",
+  rock: "#78716c",
+  ghost: "#7c3aed",
+  dragon: "#4338ca",
+  dark: "#1c1917",
+  steel: "#64748b",
+  fairy: "#db2777"
+};
 const PREFIX_FORM_LABELS = {
   alola: "알로라",
   galar: "가라르",
@@ -172,6 +192,8 @@ const modalCloseButton = document.getElementById("modalCloseButton");
 
 let allPokemon = [];
 let basePokemon = [];
+let fullPokemon = [];
+let hasLoadedForms = false;
 let cardEntries = [];
 let koreanNameMap = new Map();
 let regionMap = new Map();
@@ -182,6 +204,7 @@ let formNameMap = new Map();
 let abilityInfoCache = new Map();
 let currentModalPokemonId = null;
 let currentDexMode = "normal";
+const expandedRegions = new Set();
 
 function parseCsv(text) {
   const rows = [];
@@ -519,6 +542,37 @@ function buildPokemonEntry(result) {
     regionKey: getRegionInfo(regionMap.get(meta.speciesId)).key
   };
 }
+function buildPokemonList(results, includeForms = false) {
+  return results
+    .map(buildPokemonEntry)
+    .filter((pokemon) => Boolean(pokemon) && (includeForms || !pokemon.isForm))
+    .sort((a, b) => a.id - b.id);
+}
+
+async function ensureAllFormsLoaded() {
+  if (hasLoadedForms) {
+    return;
+  }
+
+  dataStatus.textContent = "? ???? ??? ???? ????...";
+  const response = await fetch(`${API_BASE}/pokemon?limit=2000&offset=0`);
+  if (!response.ok) {
+    throw new Error("? ?? ??? ???? ?????.");
+  }
+
+  const data = await response.json();
+  fullPokemon = data.results
+    .map(buildPokemonEntry)
+    .filter(Boolean)
+    .sort((a, b) => a.id - b.id);
+  allPokemon = fullPokemon;
+  basePokemon = allPokemon.filter((pokemon) => !pokemon.isForm);
+  hasLoadedForms = true;
+  totalCount.textContent = String(allPokemon.length);
+  populateFilterOptions();
+  dataStatus.textContent = `${getKoreanDateLabel()} ?? ?? ${basePokemon.length}??, ? ?? ? ${allPokemon.length}??? ??????.`;
+}
+
 
 async function getAbilityInfo(abilityEntry) {
   if (abilityInfoCache.has(abilityEntry.ability.name)) {
@@ -623,6 +677,34 @@ function createPokemonCard(pokemon) {
   return card;
 }
 
+function getFilteredPokemon() {
+  const query = searchInput.value.trim().toLowerCase();
+  const selectedType = typeFilter.value;
+  const selectedRegion = regionFilter.value;
+  const selectedForm = formFilter.value;
+
+  return allPokemon.filter((pokemon) => {
+    const displayName = getPokemonDisplayName(pokemon).toLowerCase();
+    const pokemonTypes = pokemonTypeMap.get(pokemon.id) || [];
+    const matchesText = !query || pokemon.name.includes(query) || displayName.includes(query) || String(pokemon.id).includes(query);
+    const matchesType = !selectedType || pokemonTypes.includes(selectedType);
+    const matchesRegion = !selectedRegion || pokemon.regionKey === selectedRegion;
+    const matchesForm = selectedForm === "all" || pokemon.formCategory === selectedForm;
+    return matchesText && matchesType && matchesRegion && matchesForm;
+  });
+}
+
+function renderRegionCards(regionGrid, pokemonGroup, cards) {
+  const fragment = document.createDocumentFragment();
+  for (const pokemon of pokemonGroup) {
+    const card = createPokemonCard(pokemon);
+    cards.push(card);
+    fragment.appendChild(card);
+  }
+  regionGrid.innerHTML = "";
+  regionGrid.appendChild(fragment);
+}
+
 function renderRegionSections(pokemonList) {
   const grouped = new Map();
   for (const pokemon of pokemonList) {
@@ -634,62 +716,72 @@ function renderRegionSections(pokemonList) {
 
   const fragment = document.createDocumentFragment();
   const cards = [];
+  const availableRegions = Object.values(REGION_INFO).filter((regionInfo) => grouped.has(regionInfo.key));
 
-  for (const regionInfo of Object.values(REGION_INFO)) {
-    const group = grouped.get(regionInfo.key);
-    if (!group || group.length === 0) {
-      continue;
-    }
+  if (availableRegions.length === 0) {
+    regionSections.innerHTML = `
+      <section class="region-section region-empty-state">
+        <div class="region-heading">
+          <div>
+            <p class="section-label region-label">No Results</p>
+            <h3 class="region-name">??? ?? ???? ???</h3>
+          </div>
+        </div>
+        <p class="section-copy">???? ??? ???? ?? ??? ???.</p>
+      </section>
+    `;
+    cardEntries = [];
+    visibleCount.textContent = "0";
+    return;
+  }
 
+  for (const regionInfo of availableRegions) {
+    const group = grouped.get(regionInfo.key) || [];
     const sectionFragment = regionSectionTemplate.content.cloneNode(true);
     sectionFragment.querySelector(".region-label").textContent = regionInfo.label;
     sectionFragment.querySelector(".region-name").textContent = regionInfo.nameKo;
-    sectionFragment.querySelector(".region-count").textContent = `${group.length}마리`;
     const section = sectionFragment.querySelector(".region-section");
+    const toggleButton = sectionFragment.querySelector(".region-toggle");
+    const regionContent = sectionFragment.querySelector(".region-content");
     const regionGrid = sectionFragment.querySelector(".region-grid");
-
-    for (const pokemon of group) {
-      const card = createPokemonCard(pokemon);
-      cards.push(card);
-      regionGrid.appendChild(card);
-    }
+    const isExpanded = expandedRegions.has(regionInfo.key);
 
     section.dataset.region = regionInfo.key;
+    toggleButton.dataset.region = regionInfo.key;
+    toggleButton.setAttribute("aria-expanded", String(isExpanded));
+
+    if (isExpanded) {
+      regionContent.classList.remove("is-hidden");
+      renderRegionCards(regionGrid, group, cards);
+    }
+
+    toggleButton.addEventListener("click", () => {
+      const willExpand = regionContent.classList.contains("is-hidden");
+      regionContent.classList.toggle("is-hidden", !willExpand);
+      toggleButton.setAttribute("aria-expanded", String(willExpand));
+
+      if (willExpand) {
+        expandedRegions.add(regionInfo.key);
+        if (!regionGrid.children.length) {
+          renderRegionCards(regionGrid, group, cards);
+        }
+      } else {
+        expandedRegions.delete(regionInfo.key);
+        regionGrid.innerHTML = "";
+      }
+    });
+
     fragment.appendChild(section);
   }
 
   regionSections.innerHTML = "";
   regionSections.appendChild(fragment);
   cardEntries = cards;
-  visibleCount.textContent = String(cards.length);
+  visibleCount.textContent = String(pokemonList.length);
 }
 
 function filterPokemon() {
-  const query = searchInput.value.trim().toLowerCase();
-  const selectedType = typeFilter.value;
-  const selectedRegion = regionFilter.value;
-  const selectedForm = formFilter.value;
-  let matches = 0;
-
-  for (const card of cardEntries) {
-    const matchesText = !query || card.dataset.name.includes(query) || card.dataset.koreanName.includes(query) || card.dataset.number.includes(query);
-    const matchesType = !selectedType || card.dataset.types.split("|").includes(selectedType);
-    const matchesRegion = !selectedRegion || card.dataset.region === selectedRegion;
-    const matchesForm = selectedForm === "all" || card.dataset.form === selectedForm;
-    const isMatch = matchesText && matchesType && matchesRegion && matchesForm;
-    card.classList.toggle("is-hidden", !isMatch);
-    if (isMatch) {
-      matches += 1;
-    }
-  }
-
-  for (const section of regionSections.querySelectorAll(".region-section")) {
-    const visibleCards = section.querySelectorAll(".pokemon-card:not(.is-hidden)").length;
-    section.classList.toggle("is-hidden", visibleCards === 0);
-    section.querySelector(".region-count").textContent = `${visibleCards}마리`;
-  }
-
-  visibleCount.textContent = String(matches);
+  renderRegionSections(getFilteredPokemon());
 }
 
 async function openPokemonModal(pokemonId) {
@@ -755,6 +847,9 @@ async function openPokemonModal(pokemonId) {
           </div>
           <p class="modal-description">${description}</p>
           <div class="abilities-list">${buildAbilityMarkup(abilityInfoList)}</div>
+          <div class="modal-feature-area">
+            <button class="modal-nav-button modal-wallpaper-button" id="openWallpaperGeneratorButton" type="button">배경화면 생성하기</button>
+          </div>
           <div class="modal-nav">
             <button class="modal-nav-button" id="modalPrevButton" type="button">이전 포켓몬</button>
             <button class="modal-nav-button" id="modalNextButton" type="button">다음 포켓몬</button>
@@ -766,6 +861,19 @@ async function openPokemonModal(pokemonId) {
     setPokemonImage(document.getElementById("modalPokemonImage"), pokemon.id, currentDexMode, `${displayName} 이미지`);
     document.getElementById("modalPrevButton")?.addEventListener("click", () => navigatePokemonModal(-1));
     document.getElementById("modalNextButton")?.addEventListener("click", () => navigatePokemonModal(1));
+    document.dispatchEvent(new CustomEvent("pokemon-modal-rendered", {
+      detail: {
+        pokemon: {
+          id: pokemon.id,
+          slug: pokemon.name,
+          name: titleCaseName(pokemon.name),
+          name_ko: displayName,
+          image: getPrimaryImageUrl(pokemon.id, currentDexMode),
+          fallbackImage: getFallbackImageUrl(pokemon.id, currentDexMode),
+          accent: TYPE_ACCENT_MAP[detail.types[0]?.type.name] || "#f97316"
+        }
+      }
+    }));
   } catch (error) {
     if (currentModalPokemonId !== pokemonId) {
       return;
@@ -802,7 +910,6 @@ function closePokemonModal() {
 async function refreshDexMode() {
   normalDexButton.classList.toggle("is-active", currentDexMode === "normal");
   shinyDexButton.classList.toggle("is-active", currentDexMode === "shiny");
-  renderRegionSections(allPokemon);
   filterPokemon();
   const dailyPokemon = basePokemon[getDailyIndex(basePokemon.length)];
   if (dailyPokemon) {
@@ -831,7 +938,8 @@ async function loadPokemonDex() {
 
   totalCount.textContent = String(allPokemon.length);
   populateFilterOptions();
-  renderRegionSections(allPokemon);
+  expandedRegions.clear();
+  filterPokemon();
   await renderDailyPokemon(basePokemon[getDailyIndex(basePokemon.length)]);
   dataStatus.textContent = `${getKoreanDateLabel()} 기준 기본 ${basePokemon.length}마리, 폼 포함 총 ${allPokemon.length}마리를 불러왔습니다.`;
 }
@@ -839,7 +947,18 @@ async function loadPokemonDex() {
 searchInput.addEventListener("input", filterPokemon);
 typeFilter.addEventListener("change", filterPokemon);
 regionFilter.addEventListener("change", filterPokemon);
-formFilter.addEventListener("change", filterPokemon);
+formFilter.addEventListener("change", async () => {
+  if (formFilter.value !== "base" && !hasLoadedForms) {
+    try {
+      await ensureAllFormsLoaded();
+    } catch (error) {
+      console.error(error);
+      dataStatus.textContent = "? ???? ???? ?????. ?? ??? ??????.";
+      formFilter.value = "base";
+    }
+  }
+  filterPokemon();
+});
 normalDexButton.addEventListener("click", () => {
   if (currentDexMode !== "normal") {
     currentDexMode = "normal";
@@ -884,6 +1003,18 @@ loadPokemonDex().catch((error) => {
     </div>
   `;
 });
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

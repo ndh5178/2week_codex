@@ -112,14 +112,15 @@
 
   <template id="regionSectionTemplate">
     <section class="region-section">
-      <div class="region-heading">
+      <button class="region-heading region-toggle" type="button" aria-expanded="false">
         <div>
           <p class="section-label region-label"></p>
           <h3 class="region-name"></h3>
         </div>
-        <span class="region-count"></span>
+      </button>
+      <div class="region-content is-hidden">
+        <div class="region-grid"></div>
       </div>
-      <div class="region-grid"></div>
     </section>
   </template>
 
@@ -139,4 +140,6 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+
+
+

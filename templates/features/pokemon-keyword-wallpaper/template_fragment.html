@@ -1,0 +1,27 @@
+﻿<div class="wallpaper-backdrop is-hidden" id="wallpaperBackdrop">
+  <div class="wallpaper-modal" role="dialog" aria-modal="true" aria-labelledby="wallpaperModalTitle">
+    <button class="wallpaper-close" id="wallpaperCloseButton" type="button" aria-label="배경화면 생성기 닫기">×</button>
+    <div class="wallpaper-modal-layout">
+      <div class="wallpaper-modal-copy">
+        <p class="wallpaper-inline-eyebrow">Keyword Wallpaper Maker</p>
+        <h3 id="wallpaperModalTitle">키워드로 배경화면 만들기</h3>
+        <p class="wallpaper-inline-description">
+          지금 보고 있는 포켓몬을 중심으로, 입력한 키워드 분위기에 맞는 포스터형 PNG를 생성합니다.
+        </p>
+        <div class="wallpaper-current-pokemon" id="wallpaperCurrentPokemon"></div>
+        <label class="wallpaper-inline-field" for="wallpaperKeywordInput">
+          <span>키워드</span>
+          <input id="wallpaperKeywordInput" type="text" placeholder="예: 번개 도시 밤, 숲, 우주, 노을">
+        </label>
+        <div class="wallpaper-inline-actions">
+          <button id="wallpaperGenerateButton" type="button">생성</button>
+          <button id="wallpaperDownloadButton" type="button">PNG 저장</button>
+        </div>
+        <p class="wallpaper-inline-hint" id="wallpaperStatus">키워드를 입력하고 생성 버튼을 눌러주세요.</p>
+      </div>
+      <div class="wallpaper-modal-preview">
+        <canvas id="wallpaperCanvas" width="900" height="1600"></canvas>
+      </div>
+    </div>
+  </div>
+</div>

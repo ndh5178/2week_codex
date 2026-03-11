@@ -8,6 +8,8 @@ from feature_registry import get_registered_features, register_feature_blueprint
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
     app.config['REGISTERED_FEATURES'] = get_registered_features()
     app.register_blueprint(main_bp)
     register_feature_blueprints(app)

@@ -419,6 +419,38 @@ h3 {
   overflow: hidden;
 }
 
+.region-toggle {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.region-toggle::after {
+  content: "+";
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text-soft);
+}
+
+.region-toggle[aria-expanded="true"]::after {
+  content: "-";
+}
+
+.region-content {
+  margin-top: 20px;
+}
+
+.region-content.is-hidden {
+  display: none;
+}
+
+.region-empty-state .section-copy {
+  margin-top: 14px;
+}
+
 .region-count {
   font-weight: 800;
 }
@@ -715,6 +747,7 @@ h3 {
     padding: 22px;
   }
 }
+
 
 
 
