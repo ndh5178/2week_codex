@@ -112,6 +112,11 @@ const savedTeamList = document.getElementById("savedTeamList");
 const savedEmptyText = document.getElementById("savedEmptyText");
 const savedTeamItemTemplate = document.getElementById("savedTeamItemTemplate");
 const teamBoard = document.getElementById("teamBoard");
+const deleteConfirmBackdrop = document.getElementById("deleteConfirmBackdrop");
+const deleteConfirmClose = document.getElementById("deleteConfirmClose");
+const deleteConfirmCancel = document.getElementById("deleteConfirmCancel");
+const deleteConfirmAccept = document.getElementById("deleteConfirmAccept");
+const deleteConfirmMessage = document.getElementById("deleteConfirmMessage");
 
 const state = {
   selectedStyle: "offense",
@@ -123,9 +128,12 @@ const state = {
   saveEnabled: Boolean(bootstrap.saveEnabled),
   saveApi: bootstrap.saveApi || "/api/pokedex/team-builder/save",
   savedApi: bootstrap.savedApi || "/api/pokedex/team-builder/saved",
+  deleteApiBase: bootstrap.deleteApiBase || "/api/pokedex/team-builder",
   currentTeam: [],
   currentSummary: null,
-  savedTeams: []
+  savedTeams: [],
+  pendingDeleteId: null,
+  isDeleting: false
 };
 
 function parseCsv(text) {
@@ -368,6 +376,77 @@ function setSaveStatus(message, tone = "neutral") {
   }
   if (saveInlineStatus) {
     saveInlineStatus.textContent = message;
+  }
+}
+
+function openDeleteConfirm(item) {
+  if (!item?.id || !deleteConfirmBackdrop) {
+    setSaveStatus("삭제할 추천 팀 정보를 찾지 못했습니다.", "error");
+    return;
+  }
+
+  state.pendingDeleteId = item.id;
+  if (deleteConfirmMessage) {
+    deleteConfirmMessage.textContent = `"${item.summary?.title || item.style?.label || "추천 팀"}"을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`;
+  }
+  deleteConfirmBackdrop.classList.remove("is-hidden");
+  deleteConfirmAccept?.focus();
+}
+
+function closeDeleteConfirm() {
+  state.pendingDeleteId = null;
+  if (deleteConfirmBackdrop) {
+    deleteConfirmBackdrop.classList.add("is-hidden");
+  }
+}
+
+async function deleteSavedTeam(itemId) {
+  if (!itemId) {
+    setSaveStatus("삭제할 추천 팀 정보를 찾지 못했습니다.", "error");
+    closeDeleteConfirm();
+    return;
+  }
+  if (!state.isLoggedIn) {
+    setSaveStatus("로그인 후 저장된 추천 팀을 삭제할 수 있습니다.", "warning");
+    closeDeleteConfirm();
+    return;
+  }
+  if (!state.saveEnabled) {
+    setSaveStatus("MongoDB 설정이 없어 저장된 추천 팀을 삭제할 수 없습니다.", "warning");
+    closeDeleteConfirm();
+    return;
+  }
+  if (state.isDeleting) {
+    return;
+  }
+
+  state.isDeleting = true;
+  deleteConfirmAccept?.setAttribute("disabled", "disabled");
+  setSaveStatus("추천 팀을 삭제하는 중입니다...", "warning");
+
+  try {
+    const response = await fetch(`${state.deleteApiBase}/${encodeURIComponent(itemId)}`, {
+      method: "DELETE",
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      setSaveStatus(payload.message || "추천 팀 삭제에 실패했습니다.", "error");
+      return;
+    }
+
+    const nextItems = state.savedTeams.filter((item) => item.id !== itemId);
+    renderSavedTeams(nextItems);
+    setSaveStatus(payload.message || "추천 팀을 삭제했습니다.", "success");
+  } catch (error) {
+    console.error(error);
+    setSaveStatus("추천 팀 삭제 중 네트워크 오류가 발생했습니다.", "error");
+  } finally {
+    state.isDeleting = false;
+    deleteConfirmAccept?.removeAttribute("disabled");
+    closeDeleteConfirm();
   }
 }
 
@@ -674,9 +753,12 @@ function renderSavedTeams(items) {
       members.appendChild(chip);
     }
 
-    const button = fragment.querySelector(".saved-team-button");
-    button.addEventListener("click", () => {
+    const [restoreButton, deleteButton] = fragment.querySelectorAll(".saved-team-button");
+    restoreButton?.addEventListener("click", () => {
       restoreSavedTeam(item);
+    });
+    deleteButton?.addEventListener("click", () => {
+      openDeleteConfirm(item);
     });
 
     savedTeamList.appendChild(fragment);
@@ -868,3 +950,32 @@ if (state.isLoggedIn && state.saveEnabled) {
 loadSavedTeams();
 generateTeam();
 
+
+
+if (deleteConfirmClose) {
+  deleteConfirmClose.addEventListener("click", closeDeleteConfirm);
+}
+
+if (deleteConfirmCancel) {
+  deleteConfirmCancel.addEventListener("click", closeDeleteConfirm);
+}
+
+if (deleteConfirmBackdrop) {
+  deleteConfirmBackdrop.addEventListener("click", (event) => {
+    if (event.target === deleteConfirmBackdrop) {
+      closeDeleteConfirm();
+    }
+  });
+}
+
+if (deleteConfirmAccept) {
+  deleteConfirmAccept.addEventListener("click", () => {
+    deleteSavedTeam(state.pendingDeleteId);
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && deleteConfirmBackdrop && !deleteConfirmBackdrop.classList.contains("is-hidden")) {
+    closeDeleteConfirm();
+  }
+});

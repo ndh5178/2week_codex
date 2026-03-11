@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='features/pokedex/team_builder.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/global_bgm.css') }}">
 </head>
 <body class="builder-body login-body">
   <div class="builder-shell">
@@ -85,7 +86,7 @@
       {% if messages %}
       <div class="alert-modal-backdrop" id="alertModalBackdrop" role="presentation">
         <div class="alert-modal" role="dialog" aria-modal="true" aria-labelledby="alertModalTitle">
-          <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="알림 닫기">?</button>
+          <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="알림 닫기">&times;</button>
           <p class="eyebrow">Notice</p>
           <h2 id="alertModalTitle">알림</h2>
           <div class="alert-modal-body" id="alertModalBody">
@@ -166,5 +167,6 @@ GOOGLE_REDIRECT_URI={{ google_redirect_uri }}</code></pre>
       </section>
     </main>
   </div>
+  <script src="{{ url_for('static', filename='js/global_bgm.js') }}"></script>
 </body>
 </html>

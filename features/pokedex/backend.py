@@ -21,13 +21,19 @@ from flask import (
 )
 
 try:
+    from bson.errors import InvalidId
+    from bson.objectid import ObjectId
     from pymongo import DESCENDING, MongoClient
     from pymongo.errors import PyMongoError
 except ImportError:  # pragma: no cover - optional during bootstrap
     DESCENDING = -1
     MongoClient = None
+    ObjectId = None
 
     class PyMongoError(Exception):
+        pass
+
+    class InvalidId(Exception):
         pass
 
 GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
@@ -133,6 +139,36 @@ def save_team_build() -> tuple[dict[str, Any], int] | dict[str, Any]:
         'message': '추천 팀을 자동 저장했습니다.',
         'item': _serialize_saved_team(document),
     }
+
+
+
+@bp.delete('/api/pokedex/team-builder/<item_id>')
+def delete_team_build(item_id: str) -> tuple[dict[str, Any], int] | dict[str, Any]:
+    user = _current_user()
+    if not user:
+        return {'ok': False, 'message': '로그인 후 저장된 추천 팀을 삭제할 수 있습니다.' }, 401
+
+    collection = _get_team_collection()
+    if collection is None:
+        return {'ok': False, 'message': 'MongoDB 설정이 아직 준비되지 않았습니다.' }, 503
+
+    if ObjectId is None:
+        return {'ok': False, 'message': '삭제 기능을 사용할 수 없는 환경입니다.' }, 503
+
+    try:
+        object_id = ObjectId(item_id)
+    except (InvalidId, TypeError):
+        return {'ok': False, 'message': '삭제할 추천 팀 ID가 올바르지 않습니다.' }, 400
+
+    try:
+        result = collection.delete_one({'_id': object_id, 'user.id': user['id']})
+    except PyMongoError:
+        return {'ok': False, 'message': '추천 팀 삭제 중 오류가 발생했습니다.' }, 500
+
+    if result.deleted_count == 0:
+        return {'ok': False, 'message': '삭제할 추천 팀을 찾지 못했습니다.' }, 404
+
+    return {'ok': True, 'message': '추천 팀을 삭제했습니다.', 'id': item_id}
 
 
 @bp.get('/login')
