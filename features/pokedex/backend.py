@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -8,11 +8,13 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 from flask import (
     Blueprint,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -30,14 +32,19 @@ except ImportError:  # pragma: no cover - optional during bootstrap
     class PyMongoError(Exception):
         pass
 
+from features.pokedex.draft_store import clear_draft_members, delete_draft_member, list_draft_members, save_draft_members
+from features.pokedex.team_store import delete_team, list_user_teams, save_team
+
 GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo'
 TEAM_SAVE_COLLECTION = 'team_builder_saves'
+DRAFT_OWNER_SESSION_KEY = 'pokedex_team_draft_owner'
+TEAM_DRAFT_LIMIT = 6
 
 bp = Blueprint('pokedex', __name__)
 
-_mongo_client: MongoClient | None = None
+_mongo_client: Any | None = None
 
 
 @bp.get('/api/pokedex/health')
@@ -53,6 +60,16 @@ def team_builder_page() -> str:
         user=_current_user(),
         google_oauth_configured=_is_google_oauth_configured(),
         team_save_enabled=_is_team_storage_enabled(),
+    )
+
+
+@bp.get('/my-teams')
+@bp.get('/pokedex/my-teams')
+def my_teams_page() -> str:
+    return render_template(
+        'features/pokedex/my_teams.html',
+        user=_current_user(),
+        google_oauth_configured=_is_google_oauth_configured(),
     )
 
 
@@ -133,6 +150,111 @@ def save_team_build() -> tuple[dict[str, Any], int] | dict[str, Any]:
         'message': '추천 팀을 자동 저장했습니다.',
         'item': _serialize_saved_team(document),
     }
+
+
+@bp.get('/api/pokedex/team-builder/teams')
+def get_my_teams() -> tuple[Any, int] | Any:
+    user = _current_user()
+    if not user:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    return jsonify({'teams': list_user_teams(user['id'])})
+
+
+@bp.get('/api/pokedex/team-builder/draft')
+def get_team_draft() -> Any:
+    return jsonify({'team': _get_team_draft()})
+
+
+@bp.post('/api/pokedex/team-builder/draft/members')
+def add_team_draft_member() -> tuple[Any, int]:
+    payload = request.get_json(silent=True) or {}
+    member_id = payload.get('id')
+    display_name = str(payload.get('displayName', '')).strip()
+    image_url = str(payload.get('imageUrl', '')).strip()
+    types = payload.get('types', [])
+
+    if not member_id or not display_name:
+        return jsonify({'message': '포켓몬 정보가 올바르지 않습니다.'}), 400
+    if not isinstance(types, list):
+        return jsonify({'message': '포켓몬 타입 정보가 올바르지 않습니다.'}), 400
+
+    draft = _get_team_draft()
+    if any(str(member.get('id')) == str(member_id) for member in draft):
+        return jsonify({'message': '이미 팀 후보에 담긴 포켓몬입니다.', 'reason': 'duplicate', 'team': draft}), 409
+    if len(draft) >= TEAM_DRAFT_LIMIT:
+        return jsonify({'message': '팀 후보는 최대 6마리까지 담을 수 있습니다.', 'reason': 'full', 'team': draft}), 400
+
+    draft.append(
+        {
+            'id': member_id,
+            'name': str(payload.get('name', '')).strip(),
+            'displayName': display_name,
+            'imageUrl': image_url,
+            'types': types,
+            'region': str(payload.get('region', '')).strip(),
+            'rationale': str(payload.get('rationale', '')).strip(),
+            'stats': payload.get('stats', {}),
+            'ability': payload.get('ability', None),
+        }
+    )
+    _set_team_draft(draft)
+    return jsonify({'team': draft, 'count': len(draft)}), 201
+
+
+@bp.delete('/api/pokedex/team-builder/draft/members/<member_id>')
+def remove_team_draft_member(member_id: str) -> tuple[Any, int]:
+    if not delete_draft_member(_get_draft_owner_id(), member_id):
+        return jsonify({'message': '삭제할 팀 후보를 찾지 못했습니다.'}), 404
+    return jsonify({'ok': True})
+
+
+@bp.delete('/api/pokedex/team-builder/draft')
+def clear_team_draft() -> Any:
+    clear_draft_members(_get_draft_owner_id())
+    return jsonify({'ok': True})
+
+
+@bp.post('/api/pokedex/team-builder/teams')
+def create_team() -> tuple[Any, int]:
+    user = _current_user()
+    if not user:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+
+    payload = request.get_json(silent=True) or {}
+    team_name = str(payload.get('team_name', '')).strip()
+    style = str(payload.get('style', '')).strip()
+    members = payload.get('members', [])
+    summary = payload.get('summary', {})
+
+    if not team_name:
+        return jsonify({'message': '팀 이름을 입력해 주세요.'}), 400
+    if not style:
+        return jsonify({'message': '팀 스타일 정보가 필요합니다.'}), 400
+    if not isinstance(members, list) or len(members) != 6:
+        return jsonify({'message': '저장할 팀은 6마리여야 합니다.'}), 400
+
+    team = save_team(
+        {
+            'id': uuid4().hex,
+            'user_id': user['id'],
+            'user_name': user.get('name', 'Trainer'),
+            'team_name': team_name,
+            'style': style,
+            'members': members,
+            'summary': summary,
+        }
+    )
+    return jsonify({'team': team}), 201
+
+
+@bp.delete('/api/pokedex/team-builder/teams/<team_id>')
+def remove_team(team_id: str) -> tuple[Any, int]:
+    user = _current_user()
+    if not user:
+        return jsonify({'message': '로그인이 필요합니다.'}), 401
+    if not delete_team(user['id'], team_id):
+        return jsonify({'message': '삭제할 팀을 찾지 못했습니다.'}), 404
+    return jsonify({'ok': True})
 
 
 @bp.get('/login')
@@ -241,20 +363,37 @@ def _current_user() -> dict[str, str] | None:
     return session.get('google_user')
 
 
+def _get_team_draft() -> list[dict[str, Any]]:
+    return list_draft_members(_get_draft_owner_id())
+
+
+def _set_team_draft(draft: list[dict[str, Any]]) -> None:
+    save_draft_members(_get_draft_owner_id(), draft)
+
+
+def _get_draft_owner_id() -> str:
+    user = _current_user()
+    if user and user.get('id'):
+        return f"user:{user['id']}"
+
+    owner_id = session.get(DRAFT_OWNER_SESSION_KEY)
+    if not owner_id:
+        owner_id = f"guest:{uuid4().hex}"
+        session[DRAFT_OWNER_SESSION_KEY] = owner_id
+        session.modified = True
+    return owner_id
+
 
 def _is_google_oauth_configured() -> bool:
     return bool(current_app.config.get('GOOGLE_CLIENT_ID') and current_app.config.get('GOOGLE_CLIENT_SECRET'))
-
 
 
 def _is_team_storage_enabled() -> bool:
     return bool(MongoClient and (_mongo_uri() is not None))
 
 
-
 def _mongo_uri() -> str | None:
     return os.getenv('MONGODB_URI') or os.getenv('MONGO_URI')
-
 
 
 def _get_team_collection():
@@ -273,7 +412,6 @@ def _get_team_collection():
     return _mongo_client[database_name][TEAM_SAVE_COLLECTION]
 
 
-
 def _serialize_saved_team(document: dict[str, Any]) -> dict[str, Any]:
     created_at = document.get('created_at')
     return {
@@ -285,13 +423,11 @@ def _serialize_saved_team(document: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-
 def _google_redirect_uri() -> str:
     configured = current_app.config.get('GOOGLE_REDIRECT_URI')
     if configured:
         return configured
     return url_for('pokedex.google_callback', _external=True)
-
 
 
 def _safe_next_url(candidate: str | None) -> str:
@@ -305,13 +441,11 @@ def _safe_next_url(candidate: str | None) -> str:
     return candidate
 
 
-
 def _post_form(url: str, payload: dict[str, str]) -> dict[str, Any]:
     body = urlencode(payload).encode('utf-8')
     request_object = Request(url, data=body, headers={'Content-Type': 'application/x-www-form-urlencoded'})
     with urlopen(request_object, timeout=15) as response:
         return json.loads(response.read().decode('utf-8'))
-
 
 
 def _get_json(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:

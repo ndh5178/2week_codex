@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 팀 관리</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='features/pokedex/team_builder.css') }}">
+</head>
+<body class="builder-body">
+  <div class="builder-shell">
+    <header class="builder-hero">
+      <nav class="builder-topbar">
+        <a class="brand-link" href="{{ url_for('main.index') }}">
+          <span class="brand-ball"></span>
+          <span>Pokemon Team Atelier</span>
+        </a>
+        <div class="topbar-actions">
+          <a class="ghost-link" href="{{ url_for('main.index') }}">메인으로</a>
+          <a class="ghost-link" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더</a>
+          <a class="ghost-link" href="{{ url_for('main.game') }}">배틀 페이지</a>
+        </div>
+      </nav>
+
+      <div class="hero-grid">
+        <section>
+          <p class="eyebrow">Team Management</p>
+          <h1>내 팀 후보와<br>내 저장 팀 관리</h1>
+          <p class="hero-copy">
+            도감에서 담아둔 팀 후보를 확인하고, 6마리가 완성되면 바로 저장 팀으로 옮길 수 있습니다.
+            저장된 팀은 이후 배틀과 팀 관리에서 계속 활용할 수 있습니다.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-action" href="{{ url_for('main.game') }}">배틀 페이지로 이동</a>
+            <a class="secondary-action" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더로 이동</a>
+          </div>
+        </section>
+
+        <aside class="identity-card">
+          <p class="eyebrow">Trainer Identity</p>
+          {% if user %}
+          <div class="identity-row">
+            {% if user.picture %}
+            <img class="identity-avatar" src="{{ user.picture }}" alt="{{ user.name }} 프로필 이미지">
+            {% else %}
+            <div class="identity-avatar placeholder">{{ user.name[:1] }}</div>
+            {% endif %}
+            <div>
+              <strong>{{ user.name }}</strong>
+              <p>{{ user.email }}</p>
+            </div>
+          </div>
+          <p class="identity-note">저장 팀은 현재 로그인한 계정 기준으로 관리됩니다.</p>
+          <form action="{{ url_for('pokedex.logout') }}" method="post">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="logout-button" type="submit">로그아웃</button>
+          </form>
+          {% else %}
+          <p class="identity-note">로그인하면 팀 후보를 저장 팀으로 옮기고 내 저장 팀을 관리할 수 있습니다.</p>
+          <a class="oauth-button {% if not google_oauth_configured %}is-disabled{% endif %}" href="{{ url_for('pokedex.google_login', next=request.path) if google_oauth_configured else url_for('pokedex.login_setup_page', next=request.path) }}">
+            Google로 시작하기
+          </a>
+          {% endif %}
+        </aside>
+      </div>
+    </header>
+
+    <main class="builder-main">
+      <section class="results-panel">
+        <div class="panel-heading">
+          <p class="eyebrow">Dex Draft</p>
+          <h2>도감에서 담은 팀 후보</h2>
+          <p>도감 상세창에서 추가한 포켓몬을 여기에서 확인하고, 타입과 특성을 함께 검토할 수 있습니다.</p>
+        </div>
+
+        <div class="status-strip">
+          <span class="status-dot"></span>
+          <p id="draftStatus">팀 후보를 불러오는 중입니다.</p>
+        </div>
+
+        <div class="saved-teams-list" id="draftTeamsList">
+          <article class="saved-team-empty">아직 팀 후보가 없습니다.</article>
+        </div>
+
+        <div class="save-toolbar">
+          {% if user %}
+          <label class="team-name-field" for="draftTeamNameInput">
+            <span>저장할 팀 이름</span>
+            <input id="draftTeamNameInput" type="text" placeholder="예: 물 타입 밸런스 팀">
+          </label>
+          <button class="primary-action" id="saveDraftTeamButton" type="button">후보를 저장 팀으로 추가</button>
+          {% else %}
+          <p class="save-hint">로그인하면 팀 후보를 저장 팀으로 추가할 수 있습니다.</p>
+          {% endif %}
+        </div>
+
+        <div class="save-toolbar">
+          <button class="ghost-action" id="clearDraftButton" type="button">후보 전체 비우기</button>
+        </div>
+      </section>
+
+      <section class="saved-teams-panel" id="savedTeams">
+        <div class="panel-heading">
+          <p class="eyebrow">Saved Teams</p>
+          <h2>내 저장 팀</h2>
+          <p>로그인한 계정으로 저장한 팀을 여기서 다시 확인하고 삭제할 수 있습니다.</p>
+        </div>
+        <div class="saved-teams-list" id="savedTeamsList">
+          {% if user %}
+          <article class="saved-team-empty">아직 저장한 팀이 없습니다.</article>
+          {% else %}
+          <article class="saved-team-empty">로그인하면 내 저장 팀을 관리할 수 있습니다.</article>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="savedTeamItemTemplate">
+    <article class="saved-team-card">
+      <div class="saved-team-header">
+        <div>
+          <p class="saved-team-style"></p>
+          <h3 class="saved-team-name"></h3>
+        </div>
+        <button class="delete-team-button" type="button">삭제</button>
+      </div>
+      <p class="saved-team-meta"></p>
+      <div class="saved-team-members"></div>
+    </article>
+  </template>
+
+  <template id="draftTeamItemTemplate">
+    <article class="saved-team-card">
+      <div class="saved-team-header">
+        <div>
+          <p class="saved-team-style">팀 후보</p>
+          <h3 class="saved-team-name"></h3>
+        </div>
+      </div>
+      <p class="saved-team-meta"></p>
+      <div class="saved-team-members"></div>
+    </article>
+  </template>
+
+  <script>
+    window.myTeamsConfig = {{ {
+      'isLoggedIn': user is not none,
+      'endpoints': {
+        'list': url_for('pokedex.get_my_teams'),
+        'create': url_for('pokedex.create_team'),
+        'deleteBase': url_for('pokedex.get_my_teams'),
+        'draftList': url_for('pokedex.get_team_draft'),
+        'draftClear': url_for('pokedex.clear_team_draft')
+      }
+    } | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='features/pokedex/my_teams.js') }}"></script>
+</body>
+</html>
