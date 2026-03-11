@@ -1,21 +1,24 @@
-﻿# Pokemon Dex Gallery
+﻿# Mini Project Feature-Based Structure
 
-포켓몬 소개와 도감 탐색을 위한 정적 웹페이지입니다.
+이 프로젝트는 4명이 각자 기능 단위로 작업한 뒤 마지막에 통합하기 쉽도록 구성되어 있습니다.
 
-## 포함 기능
+## 핵심 규칙
 
-- 오늘의 포켓몬 표시
-- 일반 / 이로치 도감 전환
-- 타입, 지역, 폼 필터
-- 메가진화 / 거다이맥스 분리 보기
-- 포켓몬 상세 팝업
+- 각 팀원은 `features/<기능명>/` 폴더 하나만 주로 수정합니다.
+- 공통 파일인 `app.py`, `feature_registry.py`, `templates/index.html`은 통합 담당만 수정합니다.
+- 각 기능 폴더는 아래 파일을 갖습니다.
+  - `backend.py`
+  - `frontend.js`
+  - `frontend.css`
+  - `template_fragment.html`
+  - `feature.md`
+
+## 현재 포함된 기능
+
+- `features/pokedex`: 기존 포켓몬 도감 메인 기능
 
 ## 실행 방법
 
-`index.html` 파일을 브라우저에서 열면 바로 확인할 수 있습니다.
-
-## 파일 구성
-
-- `index.html`
-- `style.css`
-- `script.js`
+1. `.venv\Scripts\activate`
+2. `python app.py`
+3. `http://127.0.0.1:5000` 접속

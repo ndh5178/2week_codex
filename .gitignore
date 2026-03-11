@@ -1,0 +1,8 @@
+﻿# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local artifacts
+node_modules/
+dist/
