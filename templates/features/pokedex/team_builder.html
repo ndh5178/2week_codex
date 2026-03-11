@@ -19,7 +19,7 @@
           <span>Pokemon Team Atelier</span>
         </a>
         <div class="topbar-actions">
-          <a class="ghost-link" href="{{ url_for('main.index') }}">메인으로 돌아가기</a>
+          <a class="ghost-link" href="{{ url_for('main.index') }}">메인</a>
           {% if user %}
           <a class="ghost-link" href="{{ url_for('pokedex.my_teams_page') }}">내 팀 관리</a>
           {% else %}
@@ -30,12 +30,8 @@
 
       <div class="hero-grid">
         <section>
-          <p class="eyebrow">Smart Team Builder</p>
-          <h1>게임처럼 빠르게 고르고<br>추천 팀을 바로 저장합니다</h1>
-          <p class="hero-copy">
-            공격형, 귀여운 팀, 물 타입 중심 팀, 전설 제외, 초보자 추천까지.
-            PokeAPI 데이터를 기반으로 타입과 종족값을 읽고 자동으로 팀을 조합한 뒤 시너지 이유도 함께 설명합니다.
-          </p>
+          <p class="eyebrow">Team Builder</p>
+          <h1>추천 팀 빌더</h1>
           <div class="hero-actions">
             <button class="primary-action" id="generateTeamButton" type="button">추천 팀 만들기</button>
             <button class="secondary-action" id="saveCurrentTeamButton" type="button" {% if not user %}disabled{% endif %}>현재 팀 저장</button>
@@ -43,7 +39,7 @@
         </section>
 
         <aside class="identity-card">
-          <p class="eyebrow">Trainer Identity</p>
+          <p class="eyebrow">Trainer</p>
           {% if user %}
           <div class="identity-row">
             {% if user.picture %}
@@ -56,130 +52,67 @@
               <p>{{ user.email }}</p>
             </div>
           </div>
-          <p class="identity-note">로그인 상태입니다. 추천 결과를 현재 팀 저장 또는 내 팀으로 추가로 따로 관리할 수 있습니다.</p>
           <div class="save-state-chip {% if team_save_enabled %}is-ready{% else %}is-pending{% endif %}">
-            <span>저장 상태</span>
+            <span>상태</span>
             <strong>{% if team_save_enabled %}MongoDB 저장 가능{% else %}MongoDB 설정 필요{% endif %}</strong>
           </div>
           <p class="save-inline-status" id="saveInlineStatus">
-            {% if team_save_enabled %}
-            현재 팀 저장은 최근 추천 기록을 MongoDB에 보관합니다.
-            {% else %}
-            현재 팀 저장 기능은 `MONGO_URI` 또는 `MONGODB_URI` 설정이 있어야 활성화됩니다.
-            {% endif %}
+            {% if team_save_enabled %}현재 팀 저장 가능{% else %}현재 팀 저장 비활성화{% endif %}
           </p>
           <form action="{{ url_for('pokedex.logout') }}" method="post">
             <input type="hidden" name="next" value="{{ request.path }}">
             <button class="logout-button" type="submit">로그아웃</button>
           </form>
           {% else %}
-          <p class="identity-note">로그인 없이도 추천은 가능하지만 저장과 팀 관리는 Google 로그인 후 사용할 수 있습니다.</p>
           <a class="oauth-button {% if not google_oauth_configured %}is-disabled{% endif %}" href="{{ url_for('pokedex.google_login', next=request.path) if google_oauth_configured else url_for('pokedex.login_setup_page', next=request.path) }}">
             Google로 시작하기
           </a>
-          <p class="oauth-hint">
-            {% if google_oauth_configured %}
-            로그인 후 원하는 추천 팀을 저장하고 내 팀으로 추가할 수 있습니다.
-            {% else %}
-            아직 `.env`에 Google Client ID / Secret이 비어 있습니다.
-            {% endif %}
-          </p>
           {% endif %}
         </aside>
       </div>
     </header>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-      <div class="alert-modal-backdrop" id="alertModalBackdrop" role="presentation">
-        <div class="alert-modal" role="dialog" aria-modal="true" aria-labelledby="alertModalTitle">
-          <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="알림 닫기">&times;</button>
-          <p class="eyebrow">Notice</p>
-          <h2 id="alertModalTitle">알림</h2>
-          <div class="alert-modal-body" id="alertModalBody">
-            {% for category, message in messages %}
-            <article class="alert-modal-message is-{{ category }}">
-              <strong>
-                {% if category == 'success' %}완료{% elif category == 'warning' %}안내{% elif category == 'error' %}오류{% else %}알림{% endif %}
-              </strong>
-              <p>{{ message }}</p>
-            </article>
-            {% endfor %}
-          </div>
-          <button class="primary-action alert-modal-action" id="alertModalConfirm" type="button">확인</button>
-        </div>
-      </div>
-      <script>
-        (() => {
-          const backdrop = document.getElementById("alertModalBackdrop");
-          if (!backdrop) return;
-
-          const closeButton = document.getElementById("alertModalClose");
-          const confirmButton = document.getElementById("alertModalConfirm");
-          const closeModal = () => backdrop.classList.add("is-hidden");
-
-          closeButton?.addEventListener("click", closeModal);
-          confirmButton?.addEventListener("click", closeModal);
-          backdrop.addEventListener("click", (event) => {
-            if (event.target === backdrop) closeModal();
-          });
-          document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" && !backdrop.classList.contains("is-hidden")) {
-              closeModal();
-            }
-          });
-        })();
-      </script>
-      {% endif %}
-    {% endwith %}
-
     <main class="builder-main builder-main--wide">
       <section class="selector-panel">
         <div class="panel-heading">
-          <p class="eyebrow">Team Styles</p>
-          <h2>원하는 팀 방향을 선택하세요</h2>
-          <p>선택한 스타일을 클릭하면 즉시 새 후보를 필터링하고, 약점 보완과 역할 분산을 고려해 랜덤 추천 6마리를 다시 구성합니다.</p>
+          <p class="eyebrow">Styles</p>
+          <h2>팀 스타일</h2>
         </div>
 
         <div class="style-grid" id="styleGrid">
           <button class="style-card is-active" type="button" data-style="offense">
             <span class="style-tag">Aggro</span>
-            <strong>공격형 팀</strong>
-            <p>빠른 스피드와 높은 공격 지표를 우선시합니다.</p>
+            <strong>공격형</strong>
           </button>
           <button class="style-card" type="button" data-style="cute">
             <span class="style-tag">Cute</span>
             <strong>귀여운 팀</strong>
-            <p>친근한 이미지와 사랑스러운 타입 구성을 우선합니다.</p>
           </button>
           <button class="style-card" type="button" data-style="water">
-            <span class="style-tag">Water Core</span>
-            <strong>물 타입 중심 팀</strong>
-            <p>물 타입 코어를 중심으로 전기와 풀 약점을 보완합니다.</p>
+            <span class="style-tag">Water</span>
+            <strong>물 타입 중심</strong>
           </button>
           <button class="style-card" type="button" data-style="no_legend">
             <span class="style-tag">Fair Play</span>
-            <strong>전설 제외 팀</strong>
-            <p>전설과 환상을 빼고도 강한 밸런스를 만듭니다.</p>
+            <strong>전설 제외</strong>
           </button>
           <button class="style-card" type="button" data-style="beginner">
             <span class="style-tag">Starter</span>
-            <strong>초보자 추천 팀</strong>
-            <p>운영이 직관적이고 역할이 분명한 조합을 추천합니다.</p>
+            <strong>초보자 추천</strong>
           </button>
         </div>
 
         <div class="status-strip">
           <span class="status-dot"></span>
-          <p id="builderStatus">팀 빌더 준비 중입니다. 스타일을 고르거나 추천 팀 만들기를 눌러 주세요.</p>
+          <p id="builderStatus">팀 빌더 준비 중입니다.</p>
         </div>
       </section>
 
       <section class="results-panel" id="teamBoard">
         <div class="results-header">
           <div>
-            <p class="eyebrow">Build Result</p>
-            <h2 id="teamTitle">추천 팀을 기다리는 중</h2>
+            <p class="eyebrow">Result</p>
+            <h2 id="teamTitle">추천 팀 대기 중</h2>
           </div>
           <div class="summary-badges" id="summaryBadges"></div>
         </div>
@@ -192,17 +125,17 @@
           </label>
           <button class="primary-action" id="saveTeamButton" type="button">내 팀으로 추가</button>
           {% else %}
-          <p class="save-hint">내 팀으로 추가하려면 먼저 Google 로그인을 해주세요.</p>
+          <p class="save-hint">로그인 후 저장할 수 있습니다.</p>
           {% endif %}
         </div>
 
         <article class="insight-card">
           <div class="results-header results-header--compact">
-            <h3>팀 시너지 해설</h3>
-            <span class="save-pill" id="saveStatusPill">저장 대기 중</span>
+            <h3>시너지</h3>
+            <span class="save-pill" id="saveStatusPill">대기 중</span>
           </div>
           <ul class="insight-list" id="insightList">
-            <li>스타일을 선택하거나 추천 팀 만들기를 누르면 시너지 설명이 여기에 표시됩니다.</li>
+            <li>추천 결과가 여기에 표시됩니다.</li>
           </ul>
         </article>
 
@@ -212,16 +145,12 @@
       <section class="results-panel saved-panel" id="savedTeamsPanel">
         <div class="results-header">
           <div>
-            <p class="eyebrow">Saved Builds</p>
-            <h2>최근 저장된 추천 팀</h2>
+            <p class="eyebrow">Saved</p>
+            <h2>최근 추천 팀</h2>
           </div>
         </div>
         <p class="saved-empty" id="savedEmptyText">
-          {% if user %}
-          아직 저장된 추천 팀이 없습니다. 원하는 팀이 나오면 현재 팀 저장으로 보관해 보세요.
-          {% else %}
-          로그인하면 저장된 추천 팀 목록을 볼 수 있습니다.
-          {% endif %}
+          {% if user %}저장된 추천 팀이 없습니다.{% else %}로그인 후 확인할 수 있습니다.{% endif %}
         </p>
         <div class="saved-team-list" id="savedTeamList"></div>
       </section>
@@ -256,7 +185,7 @@
       </div>
       <div class="saved-team-members"></div>
       <div class="saved-team-actions">
-        <button class="secondary-action saved-team-button" type="button">이 팀 다시 보기</button>
+        <button class="secondary-action saved-team-button" type="button">다시 보기</button>
         <button class="secondary-action saved-team-button is-danger" type="button">삭제</button>
       </div>
     </article>
@@ -264,13 +193,13 @@
 
   <div class="alert-modal-backdrop is-hidden" id="deleteConfirmBackdrop" role="presentation">
     <div class="alert-modal" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
-      <button class="alert-modal-close" id="deleteConfirmClose" type="button" aria-label="알림 닫기">&times;</button>
+      <button class="alert-modal-close" id="deleteConfirmClose" type="button" aria-label="알림 닫기">×</button>
       <p class="eyebrow">Delete Team</p>
       <h2 id="deleteConfirmTitle">삭제하시겠습니까?</h2>
       <div class="alert-modal-body">
         <article class="alert-modal-message is-warning">
           <strong>안내</strong>
-          <p id="deleteConfirmMessage">선택한 추천 팀이 최근 저장 목록에서 제거됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+          <p id="deleteConfirmMessage">선택한 추천 팀을 삭제합니다.</p>
         </article>
       </div>
       <div class="alert-modal-actions">

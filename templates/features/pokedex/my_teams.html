@@ -18,28 +18,24 @@
           <span>Pokemon Team Atelier</span>
         </a>
         <div class="topbar-actions">
-          <a class="ghost-link" href="{{ url_for('main.index') }}">메인으로</a>
+          <a class="ghost-link" href="{{ url_for('main.index') }}">메인</a>
           <a class="ghost-link" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더</a>
-          <a class="ghost-link" href="{{ url_for('main.game') }}">배틀 페이지</a>
+          <a class="ghost-link" href="{{ url_for('main.game') }}">배틀</a>
         </div>
       </nav>
 
       <div class="hero-grid">
         <section>
           <p class="eyebrow">Team Management</p>
-          <h1>내 팀 후보와<br>내 저장 팀 관리</h1>
-          <p class="hero-copy">
-            도감에서 담아둔 팀 후보를 확인하고, 6마리가 완성되면 바로 저장 팀으로 옮길 수 있습니다.
-            저장된 팀은 이후 배틀과 팀 관리에서 계속 활용할 수 있습니다.
-          </p>
+          <h1>내 팀 관리</h1>
           <div class="hero-actions">
-            <a class="primary-action" href="{{ url_for('main.game') }}">배틀 페이지로 이동</a>
-            <a class="secondary-action" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더로 이동</a>
+            <a class="primary-action" href="{{ url_for('main.game') }}">배틀 페이지</a>
+            <a class="secondary-action" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더</a>
           </div>
         </section>
 
         <aside class="identity-card">
-          <p class="eyebrow">Trainer Identity</p>
+          <p class="eyebrow">Trainer</p>
           {% if user %}
           <div class="identity-row">
             {% if user.picture %}
@@ -52,13 +48,11 @@
               <p>{{ user.email }}</p>
             </div>
           </div>
-          <p class="identity-note">저장 팀은 현재 로그인한 계정 기준으로 관리됩니다.</p>
           <form action="{{ url_for('pokedex.logout') }}" method="post">
             <input type="hidden" name="next" value="{{ request.path }}">
             <button class="logout-button" type="submit">로그아웃</button>
           </form>
           {% else %}
-          <p class="identity-note">로그인하면 팀 후보를 저장 팀으로 옮기고 내 저장 팀을 관리할 수 있습니다.</p>
           <a class="oauth-button {% if not google_oauth_configured %}is-disabled{% endif %}" href="{{ url_for('pokedex.google_login', next=request.path) if google_oauth_configured else url_for('pokedex.login_setup_page', next=request.path) }}">
             Google로 시작하기
           </a>
@@ -70,9 +64,8 @@
     <main class="builder-main">
       <section class="results-panel">
         <div class="panel-heading">
-          <p class="eyebrow">Dex Draft</p>
-          <h2>도감에서 담은 팀 후보</h2>
-          <p>도감 상세창에서 추가한 포켓몬을 여기에서 확인하고, 타입과 특성을 함께 검토할 수 있습니다.</p>
+          <p class="eyebrow">Draft</p>
+          <h2>팀 후보</h2>
         </div>
 
         <div class="status-strip">
@@ -81,18 +74,18 @@
         </div>
 
         <div class="saved-teams-list" id="draftTeamsList">
-          <article class="saved-team-empty">아직 팀 후보가 없습니다.</article>
+          <article class="saved-team-empty">팀 후보가 없습니다.</article>
         </div>
 
         <div class="save-toolbar">
           {% if user %}
           <label class="team-name-field" for="draftTeamNameInput">
-            <span>저장할 팀 이름</span>
+            <span>팀 이름</span>
             <input id="draftTeamNameInput" type="text" placeholder="예: 물 타입 밸런스 팀">
           </label>
-          <button class="primary-action" id="saveDraftTeamButton" type="button">후보를 저장 팀으로 추가</button>
+          <button class="primary-action" id="saveDraftTeamButton" type="button">저장 팀으로 추가</button>
           {% else %}
-          <p class="save-hint">로그인하면 팀 후보를 저장 팀으로 추가할 수 있습니다.</p>
+          <p class="save-hint">로그인 후 저장할 수 있습니다.</p>
           {% endif %}
         </div>
 
@@ -103,15 +96,14 @@
 
       <section class="saved-teams-panel" id="savedTeams">
         <div class="panel-heading">
-          <p class="eyebrow">Saved Teams</p>
+          <p class="eyebrow">Saved</p>
           <h2>내 저장 팀</h2>
-          <p>로그인한 계정으로 저장한 팀을 여기서 다시 확인하고 삭제할 수 있습니다.</p>
         </div>
         <div class="saved-teams-list" id="savedTeamsList">
           {% if user %}
-          <article class="saved-team-empty">아직 저장한 팀이 없습니다.</article>
+          <article class="saved-team-empty">저장한 팀이 없습니다.</article>
           {% else %}
-          <article class="saved-team-empty">로그인하면 내 저장 팀을 관리할 수 있습니다.</article>
+          <article class="saved-team-empty">로그인 후 확인할 수 있습니다.</article>
           {% endif %}
         </div>
       </section>
