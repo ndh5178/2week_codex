@@ -39,7 +39,7 @@ export function createSharedDocumentAdapter(
   const transport = options.transport ?? createLocalDocumentTransport(roomId, documentId);
   const listeners = new Set<SharedDocumentListener>();
   let documentState = createDocumentState(documentId, '', 0);
-  let unsubscribeTransport = () => undefined;
+  let unsubscribeTransport: () => void = () => undefined;
   let connected = false;
   let localChangeCounter = 0;
 
