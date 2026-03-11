@@ -2,12 +2,16 @@
   "name": "2week-codex",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
+    "dev:server": "tsx watch server/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-    "build": "npm.cmd run typecheck && vite build",
-    "preview": "vite preview"
+    "build:client": "npm.cmd run typecheck && vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build": "npm.cmd run build:client && npm.cmd run build:server",
+    "preview": "vite preview",
+    "start:server": "node dist/server/index.js"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -21,6 +25,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^5.0.0",
+    "tsx": "^4.20.0",
     "typescript": "^5.8.2",
     "vite": "^7.1.7"
   }

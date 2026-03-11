@@ -7,6 +7,7 @@ import {
   type LeaveRoomPayload,
   type PresenceSnapshotPayload,
   type PresenceUpdatePayload,
+  type RoomId,
 } from '../types/collab';
 import { RoomStore } from './room-store';
 
@@ -56,7 +57,7 @@ export function registerCollaborationHandlers(io: Server, socket: Socket) {
   });
 }
 
-function broadcastPresenceSnapshot(io: Server, roomId: string) {
+function broadcastPresenceSnapshot(io: Server, roomId: RoomId) {
   const snapshot: PresenceSnapshotPayload = {
     roomId,
     members: rooms.listMembers(roomId),
