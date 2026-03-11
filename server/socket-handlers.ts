@@ -1,4 +1,4 @@
-import type { Server, Socket } from 'socket.io';
+import type { Namespace, Server, Socket } from 'socket.io';
 import {
   SOCKET_EVENTS,
   type JoinRoomPayload,
@@ -9,8 +9,10 @@ import { RoomStore } from './room-store';
 
 const rooms = new RoomStore();
 
-function broadcastPresenceSnapshot(io: Server, roomId: RoomId) {
-  io.to(roomId).emit(SOCKET_EVENTS.PRESENCE_SNAPSHOT, rooms.getPresenceSnapshot(roomId));
+type PresenceBroadcaster = Pick<Server, 'to'> | Pick<Namespace, 'to'>;
+
+function broadcastPresenceSnapshot(target: PresenceBroadcaster, roomId: RoomId) {
+  target.to(roomId).emit(SOCKET_EVENTS.PRESENCE_SNAPSHOT, rooms.getPresenceSnapshot(roomId));
 }
 
 function leaveTrackedRooms(socket: Socket, options?: { leaveSocketRoom?: boolean }) {
