@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokemon Card Battle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename=feature.css_file) }}">
+  <style>
+    .game-page-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 20px clamp(20px, 4vw, 56px) 0;
+    }
+
+    .game-page-topbar__link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      color: #14213d;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 12px 24px rgba(20, 33, 61, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-page-topbar">
+    <a class="game-page-topbar__link" href="{{ url_for('main.index') }}">메인으로 돌아가기</a>
+  </div>
+
+  {% include feature.template_fragment %}
+
+  <script src="{{ url_for('static', filename=feature.js_file) }}"></script>
+</body>
+</html>
