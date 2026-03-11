@@ -1,0 +1,736 @@
+.meongseok-game {
+  padding: 28px clamp(20px, 4vw, 56px) 64px;
+  color: #10233f;
+}
+
+.meongseok-game * {
+  box-sizing: border-box;
+}
+
+.meongseok-game__hero,
+.meongseok-game__scoreboard,
+.meongseok-game__panel,
+.meongseok-game__battle-stage,
+.meongseok-game__log-panel,
+.meongseok-game__tips-panel,
+.meongseok-game__card,
+.meongseok-game__battle-card,
+.meongseok-game__modal {
+  border: 1px solid rgba(16, 35, 63, 0.08);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 24px 60px rgba(16, 35, 63, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.meongseok-game__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 24px;
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.95), transparent 35%),
+    linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(56, 189, 248, 0.16), rgba(255, 255, 255, 0.94));
+}
+
+.meongseok-game__eyebrow,
+.meongseok-game__panel-label,
+.meongseok-game__round-label,
+.meongseok-game__score-label,
+.meongseok-game__difficulty-label {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(16, 35, 63, 0.6);
+}
+
+.meongseok-game__title,
+.meongseok-game__panel-title,
+.meongseok-game__log-title,
+.meongseok-game__card-name,
+.meongseok-game__battle-name,
+.meongseok-game__tip-card strong,
+.meongseok-game__modal-title {
+  margin: 0;
+  font-family: "Black Han Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.meongseok-game__title {
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  line-height: 1;
+}
+
+.meongseok-game__lead,
+.meongseok-game__status,
+.meongseok-game__selection,
+.meongseok-game__score-sub,
+.meongseok-game__battle-result,
+.meongseok-game__log-item,
+.meongseok-game__stat-label,
+.meongseok-game__stat-value,
+.meongseok-game__card-description,
+.meongseok-game__battle-meta,
+.meongseok-game__battle-placeholder,
+.meongseok-game__tip-card p,
+.meongseok-game__round-sub,
+.meongseok-game__modal-text {
+  color: #4d6283;
+}
+
+.meongseok-game__lead {
+  margin: 18px 0 0;
+  max-width: 680px;
+  line-height: 1.75;
+}
+
+.meongseok-game__controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.meongseok-game__mode-switch,
+.meongseok-game__difficulty-buttons {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(16, 35, 63, 0.08);
+}
+
+.meongseok-game__difficulty-buttons {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.meongseok-game__mode-button,
+.meongseok-game__primary,
+.meongseok-game__ghost,
+.meongseok-game__card-button,
+.meongseok-game__difficulty-button {
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.meongseok-game__mode-button,
+.meongseok-game__difficulty-button {
+  min-height: 46px;
+  background: transparent;
+  color: #4d6283;
+}
+
+.meongseok-game__mode-button.is-active,
+.meongseok-game__difficulty-button.is-active {
+  background: #ffffff;
+  color: #10233f;
+  box-shadow: 0 10px 20px rgba(16, 35, 63, 0.1);
+}
+
+.meongseok-game__primary,
+.meongseok-game__ghost,
+.meongseok-game__card-button:hover,
+.meongseok-game__mode-button:hover,
+.meongseok-game__difficulty-button:hover {
+  transform: translateY(-2px);
+}
+
+.meongseok-game__primary {
+  min-height: 50px;
+  padding: 0 18px;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(239, 68, 68, 0.24);
+}
+
+.meongseok-game__primary:disabled,
+.meongseok-game__card-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.meongseok-game__ghost {
+  min-height: 44px;
+  padding: 0 16px;
+  background: rgba(16, 35, 63, 0.08);
+  color: #10233f;
+}
+
+.meongseok-game__scoreboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 22px;
+  padding: 18px;
+}
+
+.meongseok-game__score-card,
+.meongseok-game__round {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 124px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.92));
+}
+
+.meongseok-game__score-value,
+.meongseok-game__round-value {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  color: #10233f;
+}
+
+.meongseok-game__round-sub {
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.meongseok-game__arena {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr) minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.meongseok-game__arena.is-resolving .meongseok-game__battle-card {
+  animation: battlePulse 720ms ease;
+}
+
+.meongseok-game__arena.is-resolving .meongseok-game__versus {
+  animation: versusFlash 720ms ease;
+}
+
+.meongseok-game__panel,
+.meongseok-game__battle-stage,
+.meongseok-game__log-panel,
+.meongseok-game__tips-panel,
+.meongseok-game__modal {
+  padding: 24px;
+}
+
+.meongseok-game__panel-head,
+.meongseok-game__log-head,
+.meongseok-game__modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.meongseok-game__selection {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(16, 35, 63, 0.06);
+  font-size: 0.92rem;
+  text-align: right;
+}
+
+.meongseok-game__hand {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.meongseok-game__card {
+  position: relative;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(250, 204, 21, 0.18), transparent 28%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.92));
+}
+
+.meongseok-game__card.is-selected {
+  border-color: rgba(14, 165, 233, 0.45);
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.18);
+}
+
+.meongseok-game__card.is-used {
+  opacity: 0.45;
+}
+
+.meongseok-game__card-top,
+.meongseok-game__battle-top,
+.meongseok-game__stat-grid,
+.meongseok-game__health-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.meongseok-game__card-top {
+  align-items: start;
+}
+
+.meongseok-game__card-badge,
+.meongseok-game__battle-badge,
+.meongseok-game__skill-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(16, 35, 63, 0.08);
+  color: #10233f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.meongseok-game__skill-badge {
+  cursor: help;
+}
+
+.meongseok-game__card-body {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.meongseok-game__card-image,
+.meongseok-game__battle-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.meongseok-game__card-image-wrap,
+.meongseok-game__battle-image-wrap {
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: radial-gradient(circle at top, rgba(191, 219, 254, 0.45), rgba(255, 255, 255, 0.9));
+}
+
+.meongseok-game__card-image-wrap {
+  min-height: 88px;
+}
+
+.meongseok-game__battle-image-wrap {
+  min-height: 140px;
+}
+
+.meongseok-game__card-name,
+.meongseok-game__battle-name,
+.meongseok-game__modal-title {
+  font-size: 1.5rem;
+}
+
+.meongseok-game__card-description,
+.meongseok-game__modal-text {
+  margin: 10px 0 0;
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.meongseok-game__health-row {
+  margin-top: 16px;
+}
+
+.meongseok-game__health-bar {
+  overflow: hidden;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(16, 35, 63, 0.1);
+}
+
+.meongseok-game__health-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #84cc16);
+  transition: width 280ms ease;
+}
+
+.meongseok-game__health-text {
+  min-width: 58px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #10233f;
+  text-align: right;
+}
+
+.meongseok-game__stat-grid {
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.meongseok-game__stat {
+  min-width: 64px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(16, 35, 63, 0.05);
+  text-align: center;
+}
+
+.meongseok-game__stat-label,
+.meongseok-game__stat-value {
+  display: block;
+}
+
+.meongseok-game__stat-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.meongseok-game__stat-value {
+  margin-top: 6px;
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #10233f;
+}
+
+.meongseok-game__card-button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 16px;
+  background: rgba(16, 35, 63, 0.08);
+  color: #10233f;
+}
+
+.meongseok-game__card-button.is-selected {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.25);
+}
+
+.meongseok-game__battle-stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  background:
+    radial-gradient(circle at top, rgba(251, 191, 36, 0.22), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.94));
+}
+
+.meongseok-game__versus {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10233f, #ef4444);
+  color: #ffffff;
+  font-family: "Black Han Sans", sans-serif;
+  font-size: 1.7rem;
+}
+
+.meongseok-game__battle-cards {
+  display: grid;
+  gap: 16px;
+}
+
+.meongseok-game__battle-card {
+  min-height: 256px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.meongseok-game__battle-card.is-winning {
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 18px 36px rgba(34, 197, 94, 0.18);
+}
+
+.meongseok-game__battle-placeholder {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.meongseok-game__battle-card-content {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.meongseok-game__battle-meta {
+  margin: 10px 0 0;
+  line-height: 1.7;
+}
+
+.meongseok-game__battle-actions {
+  display: grid;
+  gap: 14px;
+}
+
+.meongseok-game__battle-result {
+  margin: 0;
+  min-height: 72px;
+  line-height: 1.7;
+}
+
+.meongseok-game__battle-result.is-highlight {
+  animation: resultGlow 720ms ease;
+}
+
+.meongseok-game__tips-panel,
+.meongseok-game__log-panel {
+  margin-top: 22px;
+}
+
+.meongseok-game__tips-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.meongseok-game__tip-card {
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(16, 35, 63, 0.05);
+}
+
+.meongseok-game__tip-card p {
+  margin: 10px 0 0;
+  line-height: 1.65;
+}
+
+.meongseok-game__log {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meongseok-game__log-item {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(16, 35, 63, 0.05);
+  line-height: 1.65;
+}
+
+.meongseok-game__log-item.is-empty {
+  text-align: center;
+}
+
+.meongseok-game__tooltip {
+  position: fixed;
+  z-index: 60;
+  max-width: 240px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(16, 35, 63, 0.94);
+  color: #ffffff;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.meongseok-game__tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.meongseok-game__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(16, 35, 63, 0.48);
+  z-index: 50;
+}
+
+.meongseok-game__modal-backdrop.is-hidden {
+  display: none;
+}
+
+.meongseok-game__modal {
+  width: min(520px, 100%);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.meongseok-game__modal-actions {
+  margin-top: 22px;
+}
+
+.meongseok-game__type-fire { color: #c2410c; }
+.meongseok-game__type-water { color: #1d4ed8; }
+.meongseok-game__type-grass { color: #15803d; }
+.meongseok-game__type-electric { color: #a16207; }
+.meongseok-game__type-psychic { color: #be185d; }
+.meongseok-game__type-fighting { color: #991b1b; }
+.meongseok-game__type-dragon { color: #4338ca; }
+.meongseok-game__type-dark { color: #374151; }
+
+@keyframes battlePulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@keyframes versusFlash {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 18px rgba(239, 68, 68, 0.12); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes resultGlow {
+  0% { color: #4d6283; }
+  50% { color: #10233f; }
+  100% { color: #4d6283; }
+}
+
+
+.meongseok-game__story-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  gap: 20px;
+  margin-top: 22px;
+  padding: 22px 24px;
+  border: 1px solid rgba(16, 35, 63, 0.08);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(16, 35, 63, 0.04), rgba(251, 191, 36, 0.12), rgba(255, 255, 255, 0.92));
+}
+
+.meongseok-game__story-text {
+  margin: 10px 0 0;
+  color: #4d6283;
+  line-height: 1.75;
+}
+
+.meongseok-game__story-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-content: start;
+}
+
+.meongseok-game__story-tag,
+.meongseok-game__rarity-badge,
+.meongseok-game__theme-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(16, 35, 63, 0.08);
+  color: #10233f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.meongseok-game__rarity-badge.is-epic {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #ffffff;
+}
+
+.meongseok-game__rarity-badge.is-rare {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+}
+
+.meongseok-game__theme-badge {
+  background: rgba(14, 165, 233, 0.12);
+}
+
+@media (max-width: 1180px) {
+  .meongseok-game__hero,
+  .meongseok-game__arena,
+  .meongseok-game__tips-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meongseok-game__scoreboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .meongseok-game__panel-head,
+  .meongseok-game__log-head,
+  .meongseok-game__card-top,
+  .meongseok-game__battle-top,
+  .meongseok-game__health-row,
+  .meongseok-game__modal-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meongseok-game__card-body,
+  .meongseok-game__battle-card-content {
+    grid-template-columns: 1fr;
+  }
+
+  .meongseok-game__selection,
+  .meongseok-game__health-text {
+    text-align: left;
+  }
+}
+
+
+.meongseok-game__story-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  gap: 20px;
+  margin-top: 22px;
+  padding: 22px 24px;
+  border: 1px solid rgba(16, 35, 63, 0.08);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(16, 35, 63, 0.04), rgba(251, 191, 36, 0.12), rgba(255, 255, 255, 0.92));
+}
+
+.meongseok-game__story-text {
+  margin: 10px 0 0;
+  color: #4d6283;
+  line-height: 1.75;
+}
+
+.meongseok-game__story-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-content: start;
+}
+
+.meongseok-game__story-tag,
+.meongseok-game__rarity-badge,
+.meongseok-game__theme-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(16, 35, 63, 0.08);
+  color: #10233f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.meongseok-game__rarity-badge.is-epic {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #ffffff;
+}
+
+.meongseok-game__rarity-badge.is-rare {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+}
+
+.meongseok-game__theme-badge {
+  background: rgba(14, 165, 233, 0.12);
+}
