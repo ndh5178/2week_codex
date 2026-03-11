@@ -26,6 +26,8 @@ def create_app() -> Flask:
         GOOGLE_CLIENT_SECRET=os.getenv('GOOGLE_CLIENT_SECRET', ''),
         GOOGLE_REDIRECT_URI=os.getenv('GOOGLE_REDIRECT_URI', ''),
         REGISTERED_FEATURES=get_registered_features(),
+        TEMPLATES_AUTO_RELOAD=True,
+        SEND_FILE_MAX_AGE_DEFAULT=0,
     )
     app.register_blueprint(main_bp)
     register_feature_blueprints(app)
