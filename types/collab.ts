@@ -24,15 +24,42 @@ export interface JoinRoomPayload {
   user: Omit<PresenceState, 'cursor' | 'selection'>;
 }
 
+export interface LeaveRoomPayload {
+  roomId: RoomId;
+  userId: UserId;
+}
+
 export interface PresenceUpdatePayload {
   roomId: RoomId;
   presence: PresenceState;
+}
+
+export interface PresenceSnapshotPayload {
+  roomId: RoomId;
+  members: PresenceState[];
+}
+
+export interface SharedDocumentState {
+  documentId: DocumentId;
+  content: string;
+  revision: number;
+  updatedAt: string;
+  updatedBy?: UserId;
 }
 
 export interface DocumentChangePayload {
   roomId: RoomId;
   documentId: DocumentId;
   content: string;
+  clientRevision: number;
+  changeId: string;
+  userId: UserId;
+}
+
+export interface DocumentSnapshotPayload {
+  roomId: RoomId;
+  document: SharedDocumentState;
+  acceptedChangeId?: string;
 }
 
 export const SOCKET_EVENTS = {

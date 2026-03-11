@@ -1,5 +1,13 @@
 import type { Server, Socket } from 'socket.io';
-import { SOCKET_EVENTS, type JoinRoomPayload, type PresenceUpdatePayload } from '../types/collab';
+import {
+  SOCKET_EVENTS,
+  type DocumentChangePayload,
+  type DocumentSnapshotPayload,
+  type JoinRoomPayload,
+  type LeaveRoomPayload,
+  type PresenceSnapshotPayload,
+  type PresenceUpdatePayload,
+} from '../types/collab';
 import { RoomStore } from './room-store';
 
 const rooms = new RoomStore();
@@ -7,30 +15,52 @@ const rooms = new RoomStore();
 export function registerCollaborationHandlers(io: Server, socket: Socket) {
   socket.on(SOCKET_EVENTS.JOIN_ROOM, (payload: JoinRoomPayload) => {
     socket.join(payload.roomId);
+    rooms.upsertMember(payload.roomId, socket.id, payload.user);
+    broadcastPresenceSnapshot(io, payload.roomId);
 
-    const room = rooms.getOrCreate(payload.roomId);
-    room.members.set(payload.user.userId, payload.user);
+    const documentSnapshot: DocumentSnapshotPayload = {
+      roomId: payload.roomId,
+      document: rooms.getDocument(payload.roomId, payload.user.activeDocumentId),
+    };
 
-    io.to(payload.roomId).emit(
-      SOCKET_EVENTS.PRESENCE_SNAPSHOT,
-      Array.from(room.members.values()),
-    );
+    socket.emit(SOCKET_EVENTS.DOCUMENT_SNAPSHOT, documentSnapshot);
   });
 
   socket.on(SOCKET_EVENTS.PRESENCE_UPDATED, (payload: PresenceUpdatePayload) => {
-    const room = rooms.getOrCreate(payload.roomId);
-    room.members.set(payload.presence.userId, payload.presence);
-
+    rooms.upsertMember(payload.roomId, socket.id, payload.presence);
     socket.to(payload.roomId).emit(SOCKET_EVENTS.PRESENCE_UPDATED, payload.presence);
   });
 
-  socket.on('disconnecting', () => {
-    for (const roomId of socket.rooms) {
-      if (roomId === socket.id) {
-        continue;
-      }
+  socket.on(SOCKET_EVENTS.DOCUMENT_CHANGED, (payload: DocumentChangePayload) => {
+    const document = rooms.applyDocumentChange(payload);
+    const snapshot: DocumentSnapshotPayload = {
+      roomId: payload.roomId,
+      document,
+      acceptedChangeId: payload.changeId,
+    };
 
-      rooms.removeMember(roomId, socket.id);
+    io.to(payload.roomId).emit(SOCKET_EVENTS.DOCUMENT_SNAPSHOT, snapshot);
+  });
+
+  socket.on(SOCKET_EVENTS.LEAVE_ROOM, (payload: LeaveRoomPayload) => {
+    socket.leave(payload.roomId);
+    rooms.removeMember(payload.roomId, payload.userId);
+    broadcastPresenceSnapshot(io, payload.roomId);
+  });
+
+  socket.on('disconnecting', () => {
+    const changedRooms = rooms.removeMemberBySocketId(socket.id);
+    for (const roomId of changedRooms) {
+      broadcastPresenceSnapshot(io, roomId);
     }
   });
+}
+
+function broadcastPresenceSnapshot(io: Server, roomId: string) {
+  const snapshot: PresenceSnapshotPayload = {
+    roomId,
+    members: rooms.listMembers(roomId),
+  };
+
+  io.to(roomId).emit(SOCKET_EVENTS.PRESENCE_SNAPSHOT, snapshot);
 }
