@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -11,8 +11,74 @@
   {% for feature in features %}
   <link rel="stylesheet" href="{{ url_for('static', filename=feature.css_file) }}">
   {% endfor %}
+  <style>
+    .game-entry {
+      margin: 24px clamp(20px, 4vw, 56px);
+      padding: 28px;
+      border: 1px solid rgba(20, 33, 61, 0.08);
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(254, 240, 138, 0.35));
+      box-shadow: 0 24px 60px rgba(20, 33, 61, 0.08);
+    }
+
+    .game-entry__eyebrow {
+      margin: 0 0 10px;
+      color: rgba(20, 33, 61, 0.62);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .game-entry__title {
+      margin: 0;
+      font-family: "Black Han Sans", sans-serif;
+      font-weight: 400;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      color: #14213d;
+    }
+
+    .game-entry__text {
+      margin: 14px 0 0;
+      max-width: 760px;
+      color: #4b5c7a;
+      line-height: 1.75;
+    }
+
+    .game-entry__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .game-entry__button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 20px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: #ffffff;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 14px 28px rgba(239, 68, 68, 0.24);
+    }
+  </style>
 </head>
 <body>
+  <section class="game-entry">
+    <p class="game-entry__eyebrow">Featured Game</p>
+    <h1 class="game-entry__title">포켓몬 카드 게임은 별도 페이지에서 플레이하세요</h1>
+    <p class="game-entry__text">
+      AI 대전과 플레이어 대전이 가능한 카드 게임은 전용 게임 페이지로 분리되었습니다. 아래 버튼을 누르면 바로 `/game`으로 이동합니다.
+    </p>
+    <div class="game-entry__actions">
+      <a class="game-entry__button" href="{{ url_for('main.game') }}">게임 페이지 열기</a>
+    </div>
+  </section>
+
   {% for feature in features %}
     {% include feature.template_fragment %}
   {% endfor %}
