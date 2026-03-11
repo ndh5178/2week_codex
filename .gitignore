@@ -1,6 +1,21 @@
-node_modules
-dist
-.vite
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Node / build
+node_modules/
+dist/
+.vite/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment files
+.env
+.env.*

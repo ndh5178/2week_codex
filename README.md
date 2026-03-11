@@ -24,3 +24,12 @@ Build a lightweight collaborative coding MVP with:
 2. Implement socket room flow in `server/`.
 3. Bind editor state to CRDT in `lib/collab/`.
 4. Connect presence UI in `client/components/`.
+
+## Realtime Server Run
+
+1. Install dependencies with `npm install`
+2. Start the server with `npm run dev:server`
+3. Default port is `3001`
+4. Optional env vars:
+   - `PORT`
+   - `CLIENT_ORIGIN`

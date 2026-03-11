@@ -82,7 +82,7 @@ export class RoomStore {
   removeMember(roomId: RoomId, userId: string) {
     const room = this.rooms.get(roomId);
     if (!room) {
-      return;
+      return undefined;
     }
 
     room.members.delete(userId);
@@ -94,7 +94,10 @@ export class RoomStore {
 
     if (room.members.size === 0) {
       this.rooms.delete(roomId);
+      return undefined;
     }
+
+    return room;
   }
 
   removeMemberBySocketId(socketId: string): RoomId[] {
