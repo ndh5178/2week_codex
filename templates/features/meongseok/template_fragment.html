@@ -1,148 +1,172 @@
-<section class="meongseok-game">
+﻿<section class="meongseok-game">
   <div class="meongseok-game__hero">
-    <div>
+    <div class="meongseok-game__hero-copy">
       <p class="meongseok-game__eyebrow">Pokemon Card Battle</p>
-      <h2 class="meongseok-game__title">내 팀 6마리 카드 배틀</h2>
+      <h2 class="meongseok-game__title">포켓몬 카드 게임 아레나</h2>
       <p class="meongseok-game__lead">
-        도감에서 팀 후보에 담아둔 포켓몬 6마리를 왼쪽 덱으로 사용합니다.
-        각 포켓몬은 선택한 특성과 종족값을 바탕으로 카드가 만들어지고, 오른쪽에서는 AI 팀이 맞붙습니다.
+        AI 대전과 플레이어 대전을 즐길 수 있는 카드 게임입니다. 팀 빌더 데이터 연동 준비가 되어 있고,
+        실시간 초대 코드로 같은 브라우저 프로필의 다른 탭과도 같이 플레이할 수 있습니다.
       </p>
+      <div class="meongseok-game__hero-actions">
+        <button class="meongseok-game__primary" id="startMatchButton" type="button">랜덤 게임 시작</button>
+        <button class="meongseok-game__ghost" id="loadTeamButton" type="button">내 팀 불러오기</button>
+      </div>
+      <p class="meongseok-game__status" id="matchStatus">게임을 시작하면 덱이 준비됩니다.</p>
+      <p class="meongseok-game__import-status" id="importStatus">아직 외부 팀 데이터가 연결되지 않았습니다.</p>
+      <p class="meongseok-game__sync-status" id="syncStatus">실시간 방에 연결되지 않았습니다.</p>
     </div>
 
-    <div class="meongseok-game__controls">
+    <div class="meongseok-game__hero-side">
+      <div class="meongseok-game__mode-switch" role="group" aria-label="게임 모드 선택">
+        <button class="meongseok-game__mode-button is-active" id="modeAiButton" type="button">AI 대전</button>
+        <button class="meongseok-game__mode-button" id="modePvpButton" type="button">플레이어 대전</button>
+      </div>
       <div class="meongseok-game__difficulty" id="difficultyGroup">
-        <span class="meongseok-game__difficulty-label">AI 난이도</span>
+        <p class="meongseok-game__panel-label">AI 난이도</p>
         <div class="meongseok-game__difficulty-buttons" role="group" aria-label="AI 난이도 선택">
           <button class="meongseok-game__difficulty-button is-active" id="difficultyEasyButton" type="button">Easy</button>
           <button class="meongseok-game__difficulty-button" id="difficultyNormalButton" type="button">Normal</button>
           <button class="meongseok-game__difficulty-button" id="difficultyHardButton" type="button">Hard</button>
         </div>
+        <p class="meongseok-game__hint-text" id="aiStrategyStatus">Easy 난이도는 카드를 랜덤으로 고릅니다.</p>
       </div>
-      <button class="meongseok-game__primary" id="startMatchButton" type="button">배틀 시작</button>
-      <p class="meongseok-game__status" id="matchStatus">도감에서 6마리를 담아오면 내 팀으로 배틀을 시작할 수 있습니다.</p>
+      <div class="meongseok-game__builder-hint">
+        <p class="meongseok-game__panel-label">팀 빌더 연동</p>
+        <p class="meongseok-game__hint-text">
+          `team-builder`가 `localStorage` 또는 브라우저 이벤트로 팀을 넘겨주면,
+          이 페이지는 그 데이터를 읽어서 내 덱으로 사용합니다.
+        </p>
+      </div>
     </div>
   </div>
 
+  <section class="meongseok-game__meta-grid">
+    <article class="meongseok-game__import-panel">
+      <div>
+        <p class="meongseok-game__panel-label">Imported Team</p>
+        <h3 class="meongseok-game__panel-title">연동된 내 팀</h3>
+      </div>
+      <div class="meongseok-game__import-list" id="importedTeamPreview">
+        <p class="meongseok-game__empty">불러온 팀이 없으면 랜덤 덱으로 플레이합니다.</p>
+      </div>
+    </article>
+
+    <article class="meongseok-game__invite-panel">
+      <div>
+        <p class="meongseok-game__panel-label">Realtime Invite</p>
+        <h3 class="meongseok-game__panel-title">실시간 초대</h3>
+      </div>
+      <p class="meongseok-game__hint-text">
+        같은 브라우저 프로필의 다른 탭에서 초대 코드를 입력하면 실시간으로 같은 매치를 공유할 수 있습니다.
+      </p>
+      <div class="meongseok-game__invite-actions">
+        <button class="meongseok-game__primary" id="createRoomButton" type="button">방 만들기</button>
+        <div class="meongseok-game__join-row">
+          <input class="meongseok-game__join-input" id="inviteCodeInput" type="text" maxlength="8" placeholder="초대 코드 입력">
+          <button class="meongseok-game__ghost" id="joinRoomButton" type="button">참가</button>
+        </div>
+        <button class="meongseok-game__ghost" id="leaveRoomButton" type="button">방 나가기</button>
+      </div>
+      <div class="meongseok-game__room-card">
+        <span class="meongseok-game__room-label">현재 코드</span>
+        <strong class="meongseok-game__room-code" id="roomCodeDisplay">미연결</strong>
+        <span class="meongseok-game__room-role" id="roomRoleDisplay">오프라인</span>
+      </div>
+    </article>
+
+    <article class="meongseok-game__ranking-panel">
+      <div>
+        <p class="meongseok-game__panel-label">Ranking</p>
+        <h3 class="meongseok-game__panel-title">내 로컬 랭킹</h3>
+      </div>
+      <div class="meongseok-game__ranking-columns">
+        <div>
+          <p class="meongseok-game__ranking-head">AI 대전</p>
+          <ul class="meongseok-game__ranking-list" id="aiRankingList"></ul>
+        </div>
+        <div>
+          <p class="meongseok-game__ranking-head">플레이어 대전</p>
+          <ul class="meongseok-game__ranking-list" id="pvpRankingList"></ul>
+        </div>
+      </div>
+    </article>
+  </section>
+
   <div class="meongseok-game__scoreboard">
     <article class="meongseok-game__score-card">
-      <p class="meongseok-game__score-label" id="leftPlayerLabel">내 팀</p>
+      <p class="meongseok-game__score-label" id="leftPlayerLabel">플레이어 1</p>
       <strong class="meongseok-game__score-value" id="leftPlayerScore">0</strong>
       <span class="meongseok-game__score-sub" id="leftPlayerDeckCount">남은 카드 0장</span>
     </article>
-    <div class="meongseok-game__round">
-      <p class="meongseok-game__round-label">Round</p>
-      <strong class="meongseok-game__round-value" id="roundIndicator">0 / 6</strong>
-      <span class="meongseok-game__round-sub" id="turnIndicator">카드를 선택해 주세요.</span>
+    <div class="meongseok-game__round-card">
+      <p class="meongseok-game__score-label">Round</p>
+      <strong class="meongseok-game__score-value" id="roundIndicator">0 / 3</strong>
+      <span class="meongseok-game__score-sub" id="turnIndicator">카드를 선택하세요.</span>
     </div>
     <article class="meongseok-game__score-card">
-      <p class="meongseok-game__score-label" id="rightPlayerLabel">AI 팀</p>
+      <p class="meongseok-game__score-label" id="rightPlayerLabel">AI</p>
       <strong class="meongseok-game__score-value" id="rightPlayerScore">0</strong>
       <span class="meongseok-game__score-sub" id="rightPlayerDeckCount">남은 카드 0장</span>
     </article>
   </div>
 
-  <section class="meongseok-game__story-panel">
-    <div>
-      <p class="meongseok-game__panel-label">Current Team</p>
-      <h3 class="meongseok-game__log-title">내 배틀 팀 후보</h3>
-      <p class="meongseok-game__story-text" id="teamDraftStatus">
-        아직 팀 후보가 없습니다. 도감에서 포켓몬을 팀에 추가한 뒤 돌아오세요.
-      </p>
-    </div>
-    <div class="meongseok-game__story-tags" id="teamDraftBadges"></div>
+  <section class="meongseok-game__match-banner" id="matchBanner">
+    <p class="meongseok-game__match-label">Match Result</p>
+    <strong class="meongseok-game__match-title" id="matchBannerTitle">READY</strong>
+    <p class="meongseok-game__match-copy" id="matchBannerCopy">게임을 시작하면 최종 승패 결과가 여기에 표시됩니다.</p>
   </section>
 
   <div class="meongseok-game__arena" id="battleArena">
     <section class="meongseok-game__panel">
       <div class="meongseok-game__panel-head">
         <div>
-          <p class="meongseok-game__panel-label">My Deck</p>
-          <h3 class="meongseok-game__panel-title" id="leftPanelTitle">내 팀</h3>
+          <p class="meongseok-game__panel-label">Left Deck</p>
+          <h3 class="meongseok-game__panel-title" id="leftPanelTitle">플레이어 1</h3>
         </div>
-        <span class="meongseok-game__selection" id="leftSelectionState">카드를 선택해 주세요.</span>
+        <span class="meongseok-game__selection" id="leftSelectionState">카드를 선택하세요.</span>
       </div>
       <div class="meongseok-game__hand" id="leftHand"></div>
     </section>
 
     <section class="meongseok-game__battle-stage">
-      <div class="meongseok-game__versus" id="versusBadge">VS</div>
       <div class="meongseok-game__battle-cards">
         <article class="meongseok-game__battle-card" id="leftBattleCard">
-          <p class="meongseok-game__battle-placeholder">내 팀 카드 대기 중</p>
+          <p class="meongseok-game__empty">플레이어 1의 카드 대기 중</p>
         </article>
+        <div class="meongseok-game__versus" id="versusBadge">VS</div>
         <article class="meongseok-game__battle-card" id="rightBattleCard">
-          <p class="meongseok-game__battle-placeholder">AI 카드 대기 중</p>
+          <p class="meongseok-game__empty">상대 카드 대기 중</p>
         </article>
       </div>
       <div class="meongseok-game__battle-actions">
         <button class="meongseok-game__primary" id="resolveRoundButton" type="button" disabled>라운드 진행</button>
-        <p class="meongseok-game__battle-result" id="roundResult">내 팀에서 사용할 카드를 고르면 라운드가 시작됩니다.</p>
+        <p class="meongseok-game__battle-result" id="roundResult">양쪽 플레이어가 카드를 고르면 라운드가 시작됩니다.</p>
       </div>
     </section>
 
     <section class="meongseok-game__panel">
       <div class="meongseok-game__panel-head">
         <div>
-          <p class="meongseok-game__panel-label">AI Deck</p>
-          <h3 class="meongseok-game__panel-title" id="rightPanelTitle">AI 팀</h3>
+          <p class="meongseok-game__panel-label">Right Deck</p>
+          <h3 class="meongseok-game__panel-title" id="rightPanelTitle">AI</h3>
         </div>
-        <span class="meongseok-game__selection" id="rightSelectionState">AI가 카드를 고르는 중입니다.</span>
+        <span class="meongseok-game__selection" id="rightSelectionState">상대 대기 중</span>
       </div>
       <div class="meongseok-game__hand" id="rightHand"></div>
     </section>
   </div>
 
-  <section class="meongseok-game__tips-panel">
-    <div class="meongseok-game__log-head">
-      <div>
-        <p class="meongseok-game__panel-label">Battle Rules</p>
-        <h3 class="meongseok-game__log-title">배틀 규칙</h3>
-      </div>
-    </div>
-    <div class="meongseok-game__tips-grid">
-      <article class="meongseok-game__tip-card">
-        <strong>6라운드 진행</strong>
-        <p>내 팀 6마리와 AI 6마리로 총 6라운드를 진행합니다.</p>
-      </article>
-      <article class="meongseok-game__tip-card">
-        <strong>특성 반영</strong>
-        <p>도감에서 선택한 특성이 카드 스킬 이름과 효과 설명으로 반영됩니다.</p>
-      </article>
-      <article class="meongseok-game__tip-card">
-        <strong>스피드 우선</strong>
-        <p>속도가 높은 카드가 먼저 공격하고, 타입 상성 보너스도 적용됩니다.</p>
-      </article>
-      <article class="meongseok-game__tip-card">
-        <strong>최종 승리</strong>
-        <p>6라운드 종료 후 더 많은 점수를 가져간 쪽이 승리합니다.</p>
-      </article>
-    </div>
-  </section>
-
   <section class="meongseok-game__log-panel">
-    <div class="meongseok-game__log-head">
+    <div class="meongseok-game__panel-head">
       <div>
         <p class="meongseok-game__panel-label">Battle Log</p>
-        <h3 class="meongseok-game__log-title">배틀 기록</h3>
+        <h3 class="meongseok-game__panel-title">전투 기록</h3>
       </div>
       <button class="meongseok-game__ghost" id="resetLogButton" type="button">로그 초기화</button>
     </div>
     <ul class="meongseok-game__log" id="battleLog">
-      <li class="meongseok-game__log-item is-empty">배틀을 시작하면 라운드 기록이 여기에 표시됩니다.</li>
+      <li class="meongseok-game__empty">새 게임을 시작하면 전투 기록이 여기에 표시됩니다.</li>
     </ul>
   </section>
-
-  <div class="meongseok-game__tooltip" id="skillTooltip"></div>
-
-  <div class="meongseok-game__modal-backdrop is-hidden" id="resultModalBackdrop">
-    <div class="meongseok-game__modal" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
-      <p class="meongseok-game__panel-label">Match Result</p>
-      <h3 class="meongseok-game__modal-title" id="resultModalTitle">배틀 결과</h3>
-      <p class="meongseok-game__modal-text" id="resultModalText">결과가 여기에 표시됩니다.</p>
-      <div class="meongseok-game__modal-actions">
-        <button class="meongseok-game__ghost" id="closeResultModalButton" type="button">닫기</button>
-        <button class="meongseok-game__primary" id="restartMatchButton" type="button">다시 시작</button>
-      </div>
-    </div>
-  </div>
 </section>
+

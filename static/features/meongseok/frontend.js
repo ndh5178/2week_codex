@@ -1,15 +1,34 @@
-const meongseokElements = {
+﻿const meongseokElements = {
   root: document.querySelector(".meongseok-game"),
+  modeAiButton: document.getElementById("modeAiButton"),
+  modePvpButton: document.getElementById("modePvpButton"),
+  difficultyGroup: document.getElementById("difficultyGroup"),
   difficultyEasyButton: document.getElementById("difficultyEasyButton"),
   difficultyNormalButton: document.getElementById("difficultyNormalButton"),
   difficultyHardButton: document.getElementById("difficultyHardButton"),
+  aiStrategyStatus: document.getElementById("aiStrategyStatus"),
   startMatchButton: document.getElementById("startMatchButton"),
+  loadTeamButton: document.getElementById("loadTeamButton"),
+  createRoomButton: document.getElementById("createRoomButton"),
+  joinRoomButton: document.getElementById("joinRoomButton"),
+  leaveRoomButton: document.getElementById("leaveRoomButton"),
+  inviteCodeInput: document.getElementById("inviteCodeInput"),
   resolveRoundButton: document.getElementById("resolveRoundButton"),
   resetLogButton: document.getElementById("resetLogButton"),
   matchStatus: document.getElementById("matchStatus"),
+  importStatus: document.getElementById("importStatus"),
+  syncStatus: document.getElementById("syncStatus"),
+  importedTeamPreview: document.getElementById("importedTeamPreview"),
+  roomCodeDisplay: document.getElementById("roomCodeDisplay"),
+  roomRoleDisplay: document.getElementById("roomRoleDisplay"),
+  aiRankingList: document.getElementById("aiRankingList"),
+  pvpRankingList: document.getElementById("pvpRankingList"),
   roundIndicator: document.getElementById("roundIndicator"),
   turnIndicator: document.getElementById("turnIndicator"),
   roundResult: document.getElementById("roundResult"),
+  matchBanner: document.getElementById("matchBanner"),
+  matchBannerTitle: document.getElementById("matchBannerTitle"),
+  matchBannerCopy: document.getElementById("matchBannerCopy"),
   leftPlayerLabel: document.getElementById("leftPlayerLabel"),
   rightPlayerLabel: document.getElementById("rightPlayerLabel"),
   leftPlayerScore: document.getElementById("leftPlayerScore"),
@@ -24,102 +43,107 @@ const meongseokElements = {
   rightHand: document.getElementById("rightHand"),
   leftBattleCard: document.getElementById("leftBattleCard"),
   rightBattleCard: document.getElementById("rightBattleCard"),
-  battleLog: document.getElementById("battleLog"),
-  battleArena: document.getElementById("battleArena"),
-  skillTooltip: document.getElementById("skillTooltip"),
-  resultModalBackdrop: document.getElementById("resultModalBackdrop"),
-  resultModalText: document.getElementById("resultModalText"),
-  closeResultModalButton: document.getElementById("closeResultModalButton"),
-  restartMatchButton: document.getElementById("restartMatchButton"),
-  teamDraftStatus: document.getElementById("teamDraftStatus"),
-  teamDraftBadges: document.getElementById("teamDraftBadges")
+  battleLog: document.getElementById("battleLog")
 };
 
-const DRAFT_TEAM_ENDPOINT = "/api/pokedex/team-builder/draft";
 const TYPE_LABEL = {
-  normal: "노말",
-  fire: "불꽃",
-  water: "물",
-  electric: "전기",
-  grass: "풀",
-  ice: "얼음",
-  fighting: "격투",
-  poison: "독",
-  ground: "땅",
-  flying: "비행",
-  psychic: "에스퍼",
-  bug: "벌레",
-  rock: "바위",
-  ghost: "고스트",
-  dragon: "드래곤",
-  dark: "악",
-  steel: "강철",
-  fairy: "페어리"
+  normal: "노말", fire: "불꽃", water: "물", electric: "전기", grass: "풀", ice: "얼음",
+  fighting: "격투", poison: "독", ground: "땅", flying: "비행", psychic: "에스퍼",
+  bug: "벌레", rock: "바위", ghost: "고스트", dragon: "드래곤", dark: "악", steel: "강철", fairy: "페어리"
 };
 
 const TYPE_ADVANTAGE = {
-  fire: ["grass", "ice", "bug", "steel"],
-  water: ["fire", "ground", "rock"],
-  grass: ["water", "ground", "rock"],
-  electric: ["water", "flying"],
-  fighting: ["normal", "rock", "steel", "dark", "ice"],
-  ground: ["fire", "electric", "poison", "rock", "steel"],
-  psychic: ["fighting", "poison"],
-  ice: ["grass", "ground", "flying", "dragon"],
-  rock: ["fire", "ice", "flying", "bug"],
-  ghost: ["ghost", "psychic"],
-  dragon: ["dragon"],
-  dark: ["ghost", "psychic"],
-  fairy: ["fighting", "dragon", "dark"],
-  flying: ["grass", "fighting", "bug"],
-  poison: ["grass", "fairy"],
-  bug: ["grass", "psychic", "dark"],
-  steel: ["ice", "rock", "fairy"]
+  fire: ["grass", "bug", "ice"], water: ["fire", "ground", "rock"], grass: ["water", "ground", "rock"],
+  electric: ["water", "flying"], psychic: ["fighting", "poison"], fighting: ["dark", "rock", "ice", "normal", "steel"],
+  dragon: ["dragon"], dark: ["psychic", "ghost"]
 };
 
-const AI_POOL = [
-  { id: 6, name: "리자몽", type: "fire", hp: 78, attack: 84, defense: 78, specialAttack: 109, specialDefense: 85, speed: 100, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png", ability: { name: "맹화", description: "체력이 낮을 때 화력이 오른다.", isHidden: false } },
-  { id: 9, name: "거북왕", type: "water", hp: 79, attack: 83, defense: 100, specialAttack: 85, specialDefense: 105, speed: 78, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png", ability: { name: "급류", description: "체력이 낮을 때 물 기술이 강해진다.", isHidden: false } },
-  { id: 3, name: "이상해꽃", type: "grass", hp: 80, attack: 82, defense: 83, specialAttack: 100, specialDefense: 100, speed: 80, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png", ability: { name: "심록", description: "체력이 낮을 때 풀 기술이 강해진다.", isHidden: false } },
-  { id: 25, name: "피카츄", type: "electric", hp: 35, attack: 55, defense: 40, specialAttack: 50, specialDefense: 50, speed: 90, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png", ability: { name: "정전기", description: "빠르게 전기를 모아 반격한다.", isHidden: false } },
-  { id: 150, name: "뮤츠", type: "psychic", hp: 106, attack: 110, defense: 90, specialAttack: 154, specialDefense: 90, speed: 130, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png", ability: { name: "프레셔", description: "압도적인 정신력으로 상대를 몰아붙인다.", isHidden: false } },
-  { id: 149, name: "망나뇽", type: "dragon", hp: 91, attack: 134, defense: 95, specialAttack: 100, specialDefense: 100, speed: 80, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png", ability: { name: "정신력", description: "흔들리지 않는 집중력으로 버틴다.", isHidden: false } },
-  { id: 94, name: "팬텀", type: "ghost", hp: 60, attack: 65, defense: 60, specialAttack: 130, specialDefense: 75, speed: 110, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png", ability: { name: "저주받은바디", description: "기묘한 기운으로 상대를 방해한다.", isHidden: false } },
-  { id: 448, name: "루카리오", type: "fighting", hp: 70, attack: 110, defense: 70, specialAttack: 115, specialDefense: 70, speed: 90, imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png", ability: { name: "불굴의마음", description: "배틀이 길어질수록 기세가 오른다.", isHidden: false } }
+const EXTERNAL_TEAM_KEYS = ["teamBuilderTeam", "pokedexTeamBuilderTeam", "pokemonTeamBuilderTeam", "selectedBattleTeam", "selectedPokemonTeam"];
+const RANKING_KEY = "meongseok-game-rankings-v1";
+
+const DEFAULT_POOL = [
+  { id: 6, name: "리자몽", types: ["fire"], hp: 82, attack: 94, speed: 100, skill: 88, image: artwork(6), summary: "폭발적인 화력으로 짧은 승부에 강합니다." },
+  { id: 9, name: "거북왕", types: ["water"], hp: 90, attack: 83, speed: 78, skill: 86, image: artwork(9), summary: "탄탄한 방어와 안정적인 밸런스를 갖춘 카드입니다." },
+  { id: 3, name: "이상해꽃", types: ["grass"], hp: 88, attack: 82, speed: 80, skill: 90, image: artwork(3), summary: "지속력과 제어력이 좋은 카드입니다." },
+  { id: 25, name: "피카츄", types: ["electric"], hp: 60, attack: 72, speed: 112, skill: 84, image: artwork(25), summary: "빠른 선공으로 흐름을 가져옵니다." },
+  { id: 150, name: "뮤츠", types: ["psychic"], hp: 106, attack: 110, speed: 100, skill: 120, image: artwork(150), summary: "전설급 스탯을 가진 강력한 카드입니다." },
+  { id: 149, name: "망나뇽", types: ["dragon"], hp: 96, attack: 104, speed: 80, skill: 92, image: artwork(149), summary: "높은 공격력으로 후반 역전에 강합니다." },
+  { id: 94, name: "팬텀", types: ["ghost", "poison"], hp: 66, attack: 88, speed: 110, skill: 94, image: artwork(94), summary: "변수 창출에 특화된 카드입니다." },
+  { id: 448, name: "루카리오", types: ["fighting", "steel"], hp: 78, attack: 104, speed: 90, skill: 88, image: artwork(448), summary: "공격과 순발력을 겸비했습니다." },
+  { id: 445, name: "한카리아스", types: ["dragon", "ground"], hp: 108, attack: 118, speed: 92, skill: 84, image: artwork(445), summary: "정면 승부에서 매우 강합니다." },
+  { id: 658, name: "개굴닌자", types: ["water", "dark"], hp: 72, attack: 95, speed: 122, skill: 90, image: artwork(658), summary: "가장 빠른 축에 드는 기습형 카드입니다." }
 ];
 
-const INITIAL_STATE = {
+const state = {
+  mode: "ai",
   difficulty: "easy",
   round: 0,
   maxRounds: 6,
   started: false,
-  gameOver: false,
+  importedTeam: [],
+  importedTeamSource: null,
   players: [
-    { id: 0, name: "내 팀", hand: [], score: 0, selectedCardId: null },
-    { id: 1, name: "AI 팀", hand: [], score: 0, selectedCardId: null }
+    { name: "플레이어 1", score: 0, deck: [], selectedId: null },
+    { name: "AI", score: 0, deck: [], selectedId: null }
   ],
   battleCards: [null, null],
-  lastWinner: null,
+  displayBattleCards: [null, null],
   log: [],
-  resultText: "내 팀에서 카드를 고르면 라운드가 시작됩니다.",
-  draftTeam: []
+  latestRoundSummary: null,
+  latestMatchOutcome: null,
+  rankings: loadRankings(),
+  room: { code: null, role: "offline", channel: null, hostReady: false }
 };
 
-let meongseokState = cloneInitialState();
+function artwork(id) {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+}
 
-function cloneInitialState() {
+function loadRankings() {
+  const fallback = {
+    ai: { rating: 1000, played: 0, wins: 0, losses: 0, draws: 0, streak: 0, bestStreak: 0 },
+    pvp: { rating: 1000, played: 0, wins: 0, losses: 0, draws: 0, streak: 0, bestStreak: 0 }
+  };
+  try {
+    const raw = window.localStorage.getItem(RANKING_KEY);
+    if (!raw) return fallback;
+    return { ...fallback, ...JSON.parse(raw) };
+  } catch (_error) {
+    return fallback;
+  }
+}
+
+function saveRankings() {
+  window.localStorage.setItem(RANKING_KEY, JSON.stringify(state.rankings));
+}
+
+function updateRanking(modeKey, outcome) {
+  const ranking = state.rankings[modeKey];
+  ranking.played += 1;
+  if (outcome === "win") {
+    ranking.wins += 1;
+    ranking.rating += 24;
+    ranking.streak += 1;
+    ranking.bestStreak = Math.max(ranking.bestStreak, ranking.streak);
+  } else if (outcome === "loss") {
+    ranking.losses += 1;
+    ranking.rating = Math.max(800, ranking.rating - 16);
+    ranking.streak = 0;
+  } else {
+    ranking.draws += 1;
+    ranking.rating += 4;
+    ranking.streak = 0;
+  }
+  saveRankings();
+}
+
+function cloneCard(card) {
   return {
-    difficulty: INITIAL_STATE.difficulty,
-    round: 0,
-    maxRounds: INITIAL_STATE.maxRounds,
-    started: false,
-    gameOver: false,
-    players: INITIAL_STATE.players.map((player) => ({ ...player, hand: [] })),
-    battleCards: [null, null],
-    lastWinner: null,
-    log: [],
-    resultText: INITIAL_STATE.resultText,
-    draftTeam: []
+    ...card,
+    types: [...card.types],
+    used: false,
+    maxHp: card.maxHp ?? card.hp,
+    currentHp: card.currentHp ?? card.hp
   };
 }
 
@@ -132,580 +156,819 @@ function shuffle(list) {
   return copy;
 }
 
-function getStatTotal(card) {
-  return (card.hp || 0) + (card.attack || 0) + (card.defense || 0) + (card.specialAttack || 0) + (card.specialDefense || 0) + (card.speed || 0);
+function buildRandomDeck(size) {
+  return shuffle(DEFAULT_POOL).slice(0, size).map(cloneCard);
 }
 
-function getAbilityEffect(ability) {
-  const name = (ability?.name || "").toLowerCase();
-  if (ability?.isHidden) {
-    return {
-      key: "hidden-power",
-      label: ability.name,
-      text: "숨겨진 특성 보너스로 스킬 수치 +16"
-    };
-  }
-  const effects = [
-    { key: "steady", text: "공격 보정 +8" },
-    { key: "swift", text: "속도 우위 시 추가 피해 +10" },
-    { key: "guard", text: "받는 첫 피해 -10" },
-    { key: "heal", text: "라운드 종료 후 체력 +10" },
-    { key: "burst", text: "첫 공격 추가 피해 +12" },
-    { key: "focus", text: "스킬 수치가 높을수록 추가 피해 증가" }
-  ];
-  let hash = 0;
-  for (const char of name) {
-    hash = (hash * 31 + char.charCodeAt(0)) % effects.length;
-  }
-  return {
-    key: effects[hash].key,
-    label: ability?.name || "기본 특성",
-    text: effects[hash].text
-  };
+function buildPlayerDeck(size) {
+  if (state.importedTeam.length === 0) return buildRandomDeck(size);
+
+  const imported = state.importedTeam.map(cloneCard);
+  const importedIds = new Set(imported.map((card) => card.id));
+  const fillers = shuffle(DEFAULT_POOL)
+    .filter((card) => !importedIds.has(card.id))
+    .slice(0, Math.max(0, size - imported.length))
+    .map(cloneCard);
+
+  return [...imported, ...fillers].slice(0, size);
 }
 
-function normalizeDraftCard(member) {
+function normalizeTypes(value) {
+  if (Array.isArray(value) && value.length) return value.map((type) => String(type).toLowerCase());
+  if (typeof value === "string" && value.trim()) return value.split(",").map((type) => type.trim().toLowerCase()).filter(Boolean);
+  return ["normal"];
+}
+
+function normalizeExternalMember(member, index) {
   const stats = member.stats || {};
-  const ability = member.ability || { name: "기본 특성", description: "선택된 특성이 없습니다.", isHidden: false };
-  const abilityEffect = getAbilityEffect(ability);
+  const types = normalizeTypes(member.types || member.typeNames || member.type);
+  const id = Number(member.id ?? member.pokemonId ?? member.dexNumber ?? index + 1);
   return {
-    id: Number(member.id),
-    name: member.displayName,
-    type: member.types?.[0] || "normal",
-    secondaryTypes: member.types || ["normal"],
-    hp: stats.hp || 60,
-    attack: Math.max(stats.attack || 50, stats.specialAttack || 50),
-    defense: Math.max(stats.defense || 50, stats.specialDefense || 50),
-    specialAttack: stats.specialAttack || 50,
-    specialDefense: stats.specialDefense || 50,
-    speed: stats.speed || 50,
-    image: member.imageUrl,
-    flavor: `${member.region || "포켓몬 세계"} 출신. ${ability.description || ""}`.trim(),
-    ability,
-    skillName: abilityEffect.label,
-    skillText: abilityEffect.text,
-    skillEffect: abilityEffect.key,
-    used: false,
-    currentHp: stats.hp || 60
+    id,
+    name: String(member.displayName ?? member.name ?? `팀 카드 ${index + 1}`),
+    types,
+    hp: Number(member.hp ?? stats.hp ?? stats.HP ?? 70),
+    attack: Number(member.attack ?? stats.attack ?? stats.Attack ?? stats.specialAttack ?? 75),
+    speed: Number(member.speed ?? stats.speed ?? stats.Speed ?? 70),
+    skill: Number(member.skill ?? stats.specialAttack ?? stats.specialDefense ?? stats.SpecialAttack ?? 75),
+    image: String(member.imageUrl ?? member.image ?? artwork(id)),
+    summary: `${types.map((type) => TYPE_LABEL[type] || type).join("/")} 타입 팀 빌더 연동 카드`
   };
 }
 
-function normalizeAiCard(card) {
-  const abilityEffect = getAbilityEffect(card.ability);
-  return {
-    id: Number(card.id),
-    name: card.name,
-    type: card.type,
-    secondaryTypes: [card.type],
-    hp: card.hp,
-    attack: Math.max(card.attack, card.specialAttack),
-    defense: Math.max(card.defense, card.specialDefense),
-    specialAttack: card.specialAttack,
-    specialDefense: card.specialDefense,
-    speed: card.speed,
-    image: card.imageUrl,
-    flavor: card.ability.description,
-    ability: card.ability,
-    skillName: abilityEffect.label,
-    skillText: abilityEffect.text,
-    skillEffect: abilityEffect.key,
-    used: false,
-    currentHp: card.hp
-  };
+function extractTeamArray(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.team)) return raw.team;
+  if (raw && Array.isArray(raw.members)) return raw.members;
+  if (raw && Array.isArray(raw.pokemon)) return raw.pokemon;
+  return [];
 }
 
-async function fetchDraftTeam() {
-  const response = await fetch(DRAFT_TEAM_ENDPOINT);
-  if (!response.ok) {
-    throw new Error("draft-team-fetch-failed");
+function importTeamFromPayload(payload, sourceLabel) {
+  const team = extractTeamArray(payload).slice(0, 6).map(normalizeExternalMember);
+  if (team.length === 0) return false;
+  state.importedTeam = team;
+  state.importedTeamSource = sourceLabel;
+  return true;
+}
+
+function tryLoadImportedTeam() {
+  for (const key of EXTERNAL_TEAM_KEYS) {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      if (importTeamFromPayload(JSON.parse(raw), `localStorage:${key}`)) return true;
+    } catch (_error) {
+      continue;
+    }
   }
-  const data = await response.json();
-  return Array.isArray(data.team) ? data.team : [];
+  return false;
 }
 
-function getAvailableCards(playerIndex) {
-  return meongseokState.players[playerIndex].hand.filter((card) => !card.used);
+function getTypeBonus(attackerTypes, defenderTypes) {
+  for (const type of attackerTypes) {
+    if ((TYPE_ADVANTAGE[type] || []).some((winner) => defenderTypes.includes(winner))) {
+      return 12;
+    }
+  }
+  return 0;
 }
 
-function findCardById(playerIndex, cardId) {
-  return meongseokState.players[playerIndex].hand.find((card) => card.id === cardId && !card.used) || null;
+function estimateValue(card, opponent) {
+  const typeBonus = opponent ? getTypeBonus(card.types, opponent.types) : 0;
+  const effectiveHp = card.currentHp ?? card.hp;
+  return card.attack * 1.15 + card.speed + card.skill + effectiveHp * 0.45 + typeBonus;
+}
+
+function estimateCounterScore(card, opponent) {
+  if (!opponent) return estimateValue(card, null);
+  const myPressure = estimateValue(card, opponent);
+  const enemyPressure = estimateValue(opponent, card);
+  const speedEdge = card.speed > opponent.speed ? 10 : card.speed === opponent.speed ? 4 : 0;
+  const effectiveHp = card.currentHp ?? card.hp;
+  const hpBuffer = Math.max(0, effectiveHp - opponent.attack * 0.4);
+  return myPressure - enemyPressure * 0.45 + speedEdge + hpBuffer * 0.08;
+}
+
+function getSelectedCard(playerIndex) {
+  const selectedId = state.players[playerIndex].selectedId;
+  return state.players[playerIndex].deck.find((card) => card.id === selectedId && !card.used) || null;
+}
+
+function hasActiveBattle() {
+  return Boolean(state.battleCards[0] && state.battleCards[1]);
+}
+
+function getRemainingCards(playerIndex) {
+  return state.players[playerIndex].deck.filter((card) => !card.used);
+}
+
+function getCurrentBattleCard(playerIndex) {
+  return state.battleCards[playerIndex] || getSelectedCard(playerIndex);
+}
+
+function clearBattleSelections() {
+  state.players[0].selectedId = null;
+  state.players[1].selectedId = null;
+  state.battleCards = [null, null];
+}
+
+function ensureBattleCards() {
+  const leftCard = getSelectedCard(0);
+  const rightCard = getSelectedCard(1);
+  if (!leftCard || !rightCard) return null;
+  state.battleCards = [leftCard, rightCard];
+  state.displayBattleCards = [leftCard, rightCard];
+  return state.battleCards;
+}
+
+function canSelectCard(playerIndex, card) {
+  if (card.used || !state.started) return false;
+  if (hasActiveBattle()) {
+    return state.players[playerIndex].selectedId === card.id;
+  }
+  return true;
+}
+
+function calculateDamage(attacker, defender) {
+  const typeBonus = getTypeBonus(attacker.types, defender.types);
+  const base = attacker.attack * 0.34 + attacker.skill * 0.24 + attacker.speed * 0.12 + typeBonus;
+  return Math.max(8, Math.round(base));
+}
+
+function getBattleOrder(leftCard, rightCard) {
+  if (leftCard.speed === rightCard.speed) {
+    return leftCard.skill >= rightCard.skill ? [0, 1] : [1, 0];
+  }
+  return leftCard.speed > rightCard.speed ? [0, 1] : [1, 0];
+}
+
+function handleKnockout(winnerIndex, loserIndex) {
+  state.round += 1;
+  state.players[winnerIndex].score += 1;
+  state.battleCards[loserIndex].used = true;
+  state.battleCards[loserIndex].currentHp = 0;
+  state.latestRoundSummary = winnerIndex === 0
+    ? { result: "win", title: "ROUND WIN", copy: `${state.battleCards[winnerIndex].name}이(가) ${state.battleCards[loserIndex].name}을 쓰러뜨렸습니다.` }
+    : { result: "lose", title: "ROUND LOSE", copy: `${state.battleCards[loserIndex].name}이(가) 쓰러졌습니다. 다음 포켓몬을 준비하세요.` };
+
+  const loserHasNext = getRemainingCards(loserIndex).length > 0;
+  const winnerHasNext = getRemainingCards(winnerIndex).length > 0;
+
+  if (!loserHasNext || !winnerHasNext || state.players[winnerIndex].score >= state.maxRounds) {
+    finalizeMatchOutcome();
+    return;
+  }
+
+  clearBattleSelections();
+  if (state.mode === "ai") {
+    state.players[1].selectedId = chooseAiCardId();
+  }
+}
+
+function handleDoubleKnockout() {
+  state.round += 1;
+  state.battleCards[0].used = true;
+  state.battleCards[1].used = true;
+  state.battleCards[0].currentHp = 0;
+  state.battleCards[1].currentHp = 0;
+  state.latestRoundSummary = { result: "draw", title: "DOUBLE KO", copy: `${state.battleCards[0].name}과 ${state.battleCards[1].name}이(가) 동시에 쓰러졌습니다.` };
+
+  const leftHasNext = getRemainingCards(0).length > 0;
+  const rightHasNext = getRemainingCards(1).length > 0;
+
+  if (!leftHasNext && !rightHasNext) {
+    finalizeMatchOutcome();
+    return;
+  }
+
+  if (!leftHasNext) {
+    state.players[1].score += 1;
+    finalizeMatchOutcome();
+    return;
+  }
+
+  if (!rightHasNext) {
+    state.players[0].score += 1;
+    finalizeMatchOutcome();
+    return;
+  }
+
+  clearBattleSelections();
+  if (state.mode === "ai") {
+    state.players[1].selectedId = chooseAiCardId();
+  }
+}
+
+function getAiStrategyDescription() {
+  if (state.mode !== "ai") return "플레이어 대전에서는 AI 전략이 비활성화됩니다.";
+  if (state.difficulty === "easy") return "Easy 난이도는 남은 카드 중 하나를 랜덤으로 선택합니다.";
+  if (state.difficulty === "normal") return "Normal 난이도는 유리한 카드 후보 2장 중 하나를 확률적으로 선택합니다.";
+  return "Hard 난이도는 상대 카드 상성과 스탯을 계산해 가장 유리한 카드를 선택합니다.";
 }
 
 function chooseAiCardId() {
-  const availableCards = getAvailableCards(1);
-  const opponentCard = findCardById(0, meongseokState.players[0].selectedCardId);
-  if (!availableCards.length) {
-    return null;
+  const available = state.players[1].deck.filter((card) => !card.used);
+  if (!available.length) return null;
+
+  if (state.difficulty === "easy") {
+    return available[Math.floor(Math.random() * available.length)].id;
   }
 
-  if (meongseokState.difficulty === "easy") {
-    return availableCards[Math.floor(Math.random() * availableCards.length)].id;
-  }
-
-  const ranked = availableCards
-    .map((card) => {
-      const typeBonus = opponentCard ? (TYPE_ADVANTAGE[card.type]?.includes(opponentCard.type) ? 12 : 0) : 0;
-      return {
-        card,
-        score: card.attack * 1.2 + card.speed + card.specialAttack * 0.4 + card.currentHp * 0.3 + typeBonus
-      };
-    })
+  const opponent = getSelectedCard(0);
+  const ranked = available
+    .map((card) => ({ card, score: estimateCounterScore(card, opponent) }))
     .sort((left, right) => right.score - left.score);
 
-  if (meongseokState.difficulty === "normal") {
-    return ranked[Math.floor(Math.random() * Math.min(2, ranked.length))].card.id;
+  if (state.difficulty === "normal") {
+    const pool = ranked.slice(0, Math.min(2, ranked.length));
+    const pick = Math.random() < 0.7 ? pool[0] : pool[Math.floor(Math.random() * pool.length)];
+    return pick.card.id;
   }
 
   return ranked[0].card.id;
 }
 
-function addLog(message) {
-  meongseokState.log.unshift(message);
+function generateRoomCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-function applySkillBonus(attacker, defender, isFirstAttack) {
-  const logs = [];
-  let bonus = 0;
-  switch (attacker.skillEffect) {
-    case "hidden-power":
-      bonus += 16;
-      logs.push(`${attacker.name}의 숨겨진 특성이 발동해 스킬 보너스 +16`);
-      break;
-    case "steady":
-      bonus += 8;
-      logs.push(`${attacker.name}의 ${attacker.skillName} 효과로 공격 보정 +8`);
-      break;
-    case "swift":
-      if (attacker.speed > defender.speed) {
-        bonus += 10;
-        logs.push(`${attacker.name}의 ${attacker.skillName} 효과로 추가 피해 +10`);
-      }
-      break;
-    case "guard":
-      break;
-    case "heal":
-      break;
-    case "burst":
-      if (isFirstAttack) {
-        bonus += 12;
-        logs.push(`${attacker.name}의 ${attacker.skillName} 효과로 첫 공격 피해 +12`);
-      }
-      break;
-    case "focus": {
-      const extra = Math.max(0, Math.floor((attacker.specialAttack - defender.specialDefense) / 4));
-      bonus += extra;
-      logs.push(`${attacker.name}의 ${attacker.skillName} 효과로 추가 피해 +${extra}`);
-      break;
+function closeChannel() {
+  if (state.room.channel) {
+    state.room.channel.close();
+  }
+  state.room = { code: null, role: "offline", channel: null, hostReady: false };
+}
+
+function openChannel(code, role) {
+  closeChannel();
+  const channel = new BroadcastChannel(`meongseok-room-${code}`);
+  state.room = { code, role, channel, hostReady: role === "host" };
+  channel.addEventListener("message", handleRoomMessage);
+  renderRoomStatus();
+}
+
+function serializeState() {
+  return {
+    mode: state.mode,
+    difficulty: state.difficulty,
+    round: state.round,
+    maxRounds: state.maxRounds,
+    started: state.started,
+    players: state.players,
+    battleCards: state.battleCards,
+    displayBattleCards: state.displayBattleCards,
+    log: state.log,
+    latestRoundSummary: state.latestRoundSummary,
+    latestMatchOutcome: state.latestMatchOutcome,
+    importedTeam: state.importedTeam,
+    importedTeamSource: state.importedTeamSource
+  };
+}
+
+function applyRemoteState(payload) {
+  state.mode = payload.mode;
+  state.difficulty = payload.difficulty;
+  state.round = payload.round;
+  state.maxRounds = payload.maxRounds;
+  state.started = payload.started;
+  state.players = payload.players;
+  state.battleCards = payload.battleCards;
+  state.displayBattleCards = payload.displayBattleCards || payload.battleCards || [null, null];
+  state.log = payload.log;
+  state.latestRoundSummary = payload.latestRoundSummary || null;
+  state.latestMatchOutcome = payload.latestMatchOutcome || null;
+  state.importedTeam = payload.importedTeam || [];
+  state.importedTeamSource = payload.importedTeamSource || null;
+  renderAll();
+}
+
+function broadcast(type, payload = {}) {
+  if (!state.room.channel) return;
+  state.room.channel.postMessage({ type, payload, roomCode: state.room.code, role: state.room.role });
+}
+
+function handleRoomMessage(event) {
+  const message = event.data;
+  if (!message || message.roomCode !== state.room.code) return;
+
+  if (state.room.role === "host") {
+    if (message.type === "join-request") {
+      state.room.hostReady = true;
+      broadcast("state-sync", serializeState());
+      renderRoomStatus();
     }
-    default:
-      break;
-  }
-  return { bonus, logs };
-}
-
-function applyDefenseBonus(defender, damage, logs) {
-  if (defender.skillEffect === "guard" && !defender.guardUsed) {
-    defender.guardUsed = true;
-    logs.push(`${defender.name}의 ${defender.skillName} 효과로 받은 피해 -10`);
-    return Math.max(0, damage - 10);
-  }
-  return damage;
-}
-
-function resolveAttack(attacker, defender, isFirstAttack) {
-  const logs = [];
-  const baseDamage = Math.max(14, Math.floor(attacker.attack * 0.45 + attacker.specialAttack * 0.2));
-  const typeBonus = TYPE_ADVANTAGE[attacker.type]?.includes(defender.type) ? 12 : 0;
-  const skillBonus = applySkillBonus(attacker, defender, isFirstAttack);
-  let damage = baseDamage + typeBonus + skillBonus.bonus;
-  logs.push(...skillBonus.logs);
-  if (typeBonus > 0) {
-    logs.push(`${attacker.name}이(가) 타입 상성 보너스 +${typeBonus}를 얻었습니다.`);
-  }
-  damage = applyDefenseBonus(defender, damage, logs);
-  defender.currentHp = Math.max(0, defender.currentHp - damage);
-  logs.push(`${attacker.name}이(가) ${defender.name}에게 ${damage}의 피해를 입혔습니다.`);
-  return logs;
-}
-
-function resolveRound() {
-  if (!canResolveRound()) {
+    if (message.type === "select-card") {
+      selectCard(1, message.payload.cardId, true);
+    }
+    if (message.type === "start-match") {
+      startMatch(Boolean(message.payload.useImportedTeam), true);
+    }
+    if (message.type === "resolve-round") {
+      resolveRound(true);
+    }
     return;
   }
 
-  const leftCard = findCardById(0, meongseokState.players[0].selectedCardId);
-  const rightCard = findCardById(1, meongseokState.players[1].selectedCardId);
-  if (!leftCard || !rightCard) {
+  if (message.type === "state-sync") {
+    applyRemoteState(message.payload);
+    state.room.hostReady = true;
+    renderRoomStatus();
+  }
+}
+
+function createRoom() {
+  openChannel(generateRoomCode(), "host");
+  renderAll();
+}
+
+function joinRoom() {
+  const code = meongseokElements.inviteCodeInput.value.trim().toUpperCase();
+  if (!code) {
+    meongseokElements.syncStatus.textContent = "초대 코드를 먼저 입력하세요.";
     return;
   }
+  openChannel(code, "guest");
+  broadcast("join-request");
+}
 
-  const details = [];
-  const leftFirst = leftCard.speed >= rightCard.speed;
-  const order = leftFirst ? [[leftCard, rightCard], [rightCard, leftCard]] : [[rightCard, leftCard], [leftCard, rightCard]];
-  details.push(leftFirst ? `${leftCard.name}이(가) 먼저 공격합니다.` : `${rightCard.name}이(가) 먼저 공격합니다.`);
+function leaveRoom() {
+  closeChannel();
+  renderRoomStatus();
+}
 
-  for (let index = 0; index < order.length; index += 1) {
-    const [attacker, defender] = order[index];
-    if (attacker.currentHp <= 0 || defender.currentHp <= 0) {
-      continue;
-    }
-    details.push(...resolveAttack(attacker, defender, index === 0));
-    if (defender.currentHp <= 0) {
-      details.push(`${defender.name}이(가) 쓰러졌습니다.`);
-      break;
-    }
+function renderRoomStatus() {
+  meongseokElements.roomCodeDisplay.textContent = state.room.code || "미연결";
+  meongseokElements.roomRoleDisplay.textContent = state.room.role === "host" ? "호스트" : state.room.role === "guest" ? "게스트" : "오프라인";
+  meongseokElements.syncStatus.textContent = state.room.role === "host"
+    ? (state.room.hostReady ? "게스트가 연결되었습니다." : "초대 코드를 공유해 게스트를 기다리는 중입니다.")
+    : state.room.role === "guest"
+      ? "호스트 상태를 기다리는 중입니다."
+      : "실시간 방에 연결되지 않았습니다.";
+}
+
+function resetMatchPresentation() {
+  state.latestRoundSummary = null;
+  state.latestMatchOutcome = null;
+}
+
+function startMatch(useImportedTeam, fromRemote = false) {
+  state.started = true;
+  state.round = 0;
+  state.log = [];
+  state.battleCards = [null, null];
+  state.displayBattleCards = [null, null];
+  state.players[0].score = 0;
+  state.players[1].score = 0;
+  state.players[0].selectedId = null;
+  state.players[1].selectedId = null;
+  resetMatchPresentation();
+  state.players[0].deck = useImportedTeam ? buildPlayerDeck(6) : buildRandomDeck(6);
+  state.players[1].deck = buildRandomDeck(6);
+  state.players[1].name = state.mode === "ai" ? "AI" : (state.room.role === "host" ? "게스트" : "플레이어 2");
+  if (state.mode === "ai") state.players[1].selectedId = chooseAiCardId();
+  state.log.unshift("새 매치 시작: 포켓몬이 HP 0이 될 때까지 계속 전투하고, 쓰러지면 다음 포켓몬으로 이어집니다.");
+  renderAll();
+  if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  state.players[1].name = mode === "ai" ? "AI" : (state.room.role === "host" ? "게스트" : "플레이어 2");
+  resetMatchPresentation();
+  renderAll();
+  if (state.room.role === "host") broadcast("state-sync", serializeState());
+}
+
+function setDifficulty(level) {
+  state.difficulty = level;
+  if (state.mode === "ai" && state.started && !hasActiveBattle()) {
+    state.players[1].selectedId = chooseAiCardId();
+  }
+  renderAll();
+  if (state.room.role === "host") broadcast("state-sync", serializeState());
+}
+
+function selectCard(playerIndex, cardId, fromRemote = false) {
+  if (!state.started || hasActiveBattle()) return;
+  const card = state.players[playerIndex].deck.find((entry) => entry.id === cardId && !entry.used);
+  if (!card) return;
+
+  // Clear the previous KO/result presentation when the next Pokemon is chosen.
+  state.latestRoundSummary = null;
+  if (!state.latestMatchOutcome) {
+    state.displayBattleCards = [null, null];
   }
 
-  if (leftCard.currentHp > 0 && leftCard.skillEffect === "heal") {
-    leftCard.currentHp = Math.min(leftCard.hp, leftCard.currentHp + 10);
-    details.push(`${leftCard.name}이(가) 턴 종료 후 체력을 10 회복했습니다.`);
-  }
-  if (rightCard.currentHp > 0 && rightCard.skillEffect === "heal") {
-    rightCard.currentHp = Math.min(rightCard.hp, rightCard.currentHp + 10);
-    details.push(`${rightCard.name}이(가) 턴 종료 후 체력을 10 회복했습니다.`);
+  state.players[playerIndex].selectedId = cardId;
+  if (state.mode === "ai" && playerIndex === 0) state.players[1].selectedId = chooseAiCardId();
+
+  const leftPreviewCard = getSelectedCard(0);
+  const rightPreviewCard = getSelectedCard(1);
+  if (leftPreviewCard && rightPreviewCard) {
+    state.displayBattleCards = [leftPreviewCard, rightPreviewCard];
   }
 
-  leftCard.used = true;
-  rightCard.used = true;
-  meongseokState.round += 1;
-  meongseokState.battleCards = [leftCard, rightCard];
-  meongseokState.players[0].selectedCardId = null;
-  meongseokState.players[1].selectedCardId = null;
+  renderAll();
+  if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
+}
 
-  if (leftCard.currentHp > rightCard.currentHp) {
-    meongseokState.players[0].score += 1;
-    meongseokState.lastWinner = 0;
-  } else if (rightCard.currentHp > leftCard.currentHp) {
-    meongseokState.players[1].score += 1;
-    meongseokState.lastWinner = 1;
+function buildOutcomeState(result, title, copy) {
+  return { result, title, copy };
+}
+
+function getHpPercent(card) {
+  const currentHp = card.currentHp ?? card.hp;
+  const maxHp = card.maxHp ?? card.hp;
+  return Math.max(0, Math.min(100, Math.round((currentHp / Math.max(1, maxHp)) * 100)));
+}
+
+function getPrimaryType(card) {
+  return card.types[0] || "normal";
+}
+
+function getHpFillClass(card) {
+  const percent = getHpPercent(card);
+  const typeClass = `is-${getPrimaryType(card)}`;
+  if (percent <= 33) return `meongseok-game__hp-fill ${typeClass} is-low`;
+  if (percent <= 66) return `meongseok-game__hp-fill ${typeClass} is-mid`;
+  return `meongseok-game__hp-fill ${typeClass} is-high`;
+}
+
+function renderHpMeter(card, hidden = false) {
+  if (hidden) {
+    return `
+      <div class="meongseok-game__hp-meter">
+        <div class="meongseok-game__hp-row"><span>HP</span><strong>?</strong></div>
+        <div class="meongseok-game__hp-track"><div class="meongseok-game__hp-fill is-mid" style="width: 50%"></div></div>
+      </div>
+    `;
+  }
+
+  const percent = getHpPercent(card);
+  const fillClass = getHpFillClass(card);
+  return `
+    <div class="meongseok-game__hp-meter">
+      <div class="meongseok-game__hp-row"><span>HP</span><strong>${card.currentHp ?? card.hp} / ${card.maxHp ?? card.hp}</strong></div>
+      <div class="meongseok-game__hp-track"><div class="${fillClass}" style="width: ${percent}%"></div></div>
+    </div>
+  `;
+}
+
+function getBattleOverlayState(playerIndex) {
+  if (!state.latestRoundSummary) return null;
+  if (state.latestRoundSummary.result === "draw") {
+    return { label: "DRAW", className: "is-draw" };
+  }
+  if (state.latestRoundSummary.result === "continue") {
+    return null;
+  }
+  if (state.latestRoundSummary.result === "win") {
+    return playerIndex === 0
+      ? { label: "WIN", className: "is-win" }
+      : { label: "LOSE", className: "is-lose" };
+  }
+  if (state.latestRoundSummary.result === "lose") {
+    return playerIndex === 0
+      ? { label: "LOSE", className: "is-lose" }
+      : { label: "WIN", className: "is-win" };
+  }
+  return null;
+}
+
+function finalizeMatchOutcome() {
+  const left = state.players[0].score;
+  const right = state.players[1].score;
+  const modeKey = state.mode === "ai" ? "ai" : "pvp";
+
+  if (left > right) {
+    updateRanking(modeKey, "win");
+    state.latestMatchOutcome = buildOutcomeState("win", "WIN", `${state.players[0].name}이(가) ${left} : ${right}로 토너먼트 승리했습니다.`);
+  } else if (right > left) {
+    updateRanking(modeKey, "loss");
+    state.latestMatchOutcome = buildOutcomeState("loss", "LOSE", `${state.players[1].name}에게 ${left} : ${right}로 토너먼트 패배했습니다.`);
   } else {
-    meongseokState.lastWinner = null;
+    updateRanking(modeKey, "draw");
+    state.latestMatchOutcome = buildOutcomeState("draw", "DRAW", `최종 스코어 ${left} : ${right}로 승부를 가리지 못했습니다.`);
   }
 
-  const summary = meongseokState.lastWinner === 0
-    ? `라운드 ${meongseokState.round}: 내 팀 승리`
-    : meongseokState.lastWinner === 1
-      ? `라운드 ${meongseokState.round}: AI 승리`
-      : `라운드 ${meongseokState.round}: 무승부`;
+  state.log.unshift(`최종 결과: ${state.latestMatchOutcome.copy}`);
+}
 
-  meongseokState.resultText = `${summary} / ${details.join(" / ")}`;
-  addLog(meongseokState.resultText);
+function resolveRound(fromRemote = false) {
+  const battle = hasActiveBattle() ? state.battleCards : ensureBattleCards();
+  if (!battle) return;
 
-  if (meongseokState.round >= meongseokState.maxRounds) {
-    meongseokState.gameOver = true;
-    openResultModal(buildWinnerMessage());
+  const leftCard = battle[0];
+  const rightCard = battle[1];
+  state.displayBattleCards = [leftCard, rightCard];
+  const order = getBattleOrder(leftCard, rightCard);
+  const turnLogs = [];
+
+  for (const attackerIndex of order) {
+    const defenderIndex = attackerIndex === 0 ? 1 : 0;
+    const attacker = state.battleCards[attackerIndex];
+    const defender = state.battleCards[defenderIndex];
+    if (!attacker || !defender || attacker.currentHp <= 0 || defender.currentHp <= 0) continue;
+
+    const damage = calculateDamage(attacker, defender);
+    defender.currentHp = Math.max(0, defender.currentHp - damage);
+    turnLogs.push(`${attacker.name}의 공격! ${defender.name}에게 ${damage} 데미지, 남은 HP ${defender.currentHp}`);
+
+    if (defender.currentHp <= 0) break;
+  }
+
+  state.latestRoundSummary = null;
+
+  if (state.battleCards[0].currentHp <= 0 && state.battleCards[1].currentHp <= 0) {
+    handleDoubleKnockout();
+  } else if (state.battleCards[1].currentHp <= 0) {
+    handleKnockout(0, 1);
+  } else if (state.battleCards[0].currentHp <= 0) {
+    handleKnockout(1, 0);
   } else {
-    meongseokState.players[1].selectedCardId = chooseAiCardId();
+    state.latestRoundSummary = {
+      result: "continue",
+      title: "BATTLE CONTINUES",
+      copy: `${state.battleCards[0].name} HP ${state.battleCards[0].currentHp} / ${state.battleCards[0].maxHp}, ${state.battleCards[1].name} HP ${state.battleCards[1].currentHp} / ${state.battleCards[1].maxHp}`
+    };
   }
 
-  renderGame();
+  state.log.unshift(...turnLogs.reverse());
+  meongseokElements.roundResult.textContent = turnLogs[turnLogs.length - 1] || "전투를 계속 진행하세요.";
+  renderAll();
+  if (state.room.role === "host" && !fromRemote) broadcast("state-sync", serializeState());
 }
 
-function canResolveRound() {
-  return Boolean(
-    meongseokState.started &&
-    !meongseokState.gameOver &&
-    meongseokState.players[0].selectedCardId &&
-    meongseokState.players[1].selectedCardId
-  );
-}
-
-function buildWinnerMessage() {
-  const leftScore = meongseokState.players[0].score;
-  const rightScore = meongseokState.players[1].score;
-  if (leftScore > rightScore) {
-    return `내 팀이 ${leftScore}:${rightScore}로 승리했습니다.`;
-  }
-  if (rightScore > leftScore) {
-    return `AI 팀이 ${rightScore}:${leftScore}로 승리했습니다.`;
-  }
-  return `최종 결과는 ${leftScore}:${rightScore} 무승부입니다.`;
-}
-
-function renderDraftSummary() {
-  if (!meongseokElements.teamDraftStatus || !meongseokElements.teamDraftBadges) {
+function renderImportedTeamPreview() {
+  meongseokElements.importedTeamPreview.innerHTML = "";
+  if (state.importedTeam.length === 0) {
+    meongseokElements.importedTeamPreview.innerHTML = '<p class="meongseok-game__empty">불러온 팀이 없으면 랜덤 덱으로 플레이합니다.</p>';
     return;
   }
-  meongseokElements.teamDraftBadges.innerHTML = "";
-  const count = meongseokState.draftTeam.length;
-  if (!count) {
-    meongseokElements.teamDraftStatus.textContent = "아직 팀 후보가 없습니다. 도감에서 포켓몬을 6마리 담아와 주세요.";
-    return;
+  for (const card of state.importedTeam) {
+    const chip = document.createElement("div");
+    chip.className = "meongseok-game__import-chip";
+    chip.textContent = `${card.name} · ${card.types.map((type) => TYPE_LABEL[type] || type).join("/")}`;
+    meongseokElements.importedTeamPreview.appendChild(chip);
   }
-  meongseokElements.teamDraftStatus.textContent = `현재 팀 후보 ${count}마리. 6마리가 모두 모이면 배틀 시작 버튼으로 바로 대결할 수 있습니다.`;
-  const tags = [
-    `${count}/6마리`,
-    count === 6 ? "배틀 가능" : `${6 - count}마리 더 필요`
+}
+
+function renderRankingList(target, ranking) {
+  target.innerHTML = "";
+  const lines = [
+    `레이팅 ${ranking.rating}`,
+    `전적 ${ranking.wins}승 ${ranking.losses}패 ${ranking.draws}무`,
+    `플레이 ${ranking.played}판`,
+    `최고 연승 ${ranking.bestStreak}`
   ];
-  for (const tag of tags) {
-    const span = document.createElement("span");
-    span.className = "meongseok-game__theme-badge";
-    span.textContent = tag;
-    meongseokElements.teamDraftBadges.appendChild(span);
+  for (const line of lines) {
+    const item = document.createElement("li");
+    item.textContent = line;
+    target.appendChild(item);
   }
+}
+
+function renderStatus() {
+  meongseokElements.matchStatus.textContent = state.started
+    ? (state.importedTeam.length > 0 ? "내 팀 또는 랜덤 덱으로 게임이 진행 중입니다." : "랜덤 덱으로 게임이 진행 중입니다.")
+    : "게임을 시작하면 덱이 준비됩니다.";
+  meongseokElements.importStatus.textContent = state.importedTeamSource
+    ? `불러온 팀 소스: ${state.importedTeamSource}`
+    : "아직 외부 팀 데이터가 연결되지 않았습니다.";
+  meongseokElements.aiStrategyStatus.textContent = getAiStrategyDescription();
+}
+
+function renderScoreboard() {
+  meongseokElements.leftPlayerLabel.textContent = "플레이어 1";
+  meongseokElements.rightPlayerLabel.textContent = state.players[1].name;
+  meongseokElements.leftPanelTitle.textContent = state.importedTeam.length > 0 ? "플레이어 1 · 내 팀" : "플레이어 1";
+  meongseokElements.rightPanelTitle.textContent = state.players[1].name;
+  meongseokElements.leftPlayerScore.textContent = String(state.players[0].score);
+  meongseokElements.rightPlayerScore.textContent = String(state.players[1].score);
+  meongseokElements.leftPlayerDeckCount.textContent = `남은 포켓몬 ${getRemainingCards(0).length}마리`;
+  meongseokElements.rightPlayerDeckCount.textContent = `남은 포켓몬 ${getRemainingCards(1).length}마리`;
+  meongseokElements.roundIndicator.textContent = `KO ${state.round} / ${state.maxRounds}`;
+  meongseokElements.turnIndicator.textContent = hasActiveBattle()
+    ? `${state.battleCards[0].name} vs ${state.battleCards[1].name} 전투 중`
+    : state.mode === "ai"
+      ? `AI ${state.difficulty.toUpperCase()} 난이도`
+      : state.room.role === "host"
+        ? "호스트가 경기 진행 중"
+        : state.room.role === "guest"
+          ? "게스트가 실시간 동기화 중"
+          : "플레이어 대전";
+  meongseokElements.leftSelectionState.textContent = hasActiveBattle()
+    ? `전투 중 · HP ${state.battleCards[0].currentHp}`
+    : getSelectedCard(0) ? "선택 완료" : "카드를 선택하세요.";
+  meongseokElements.rightSelectionState.textContent = hasActiveBattle()
+    ? `전투 중 · HP ${state.battleCards[1].currentHp}`
+    : state.mode === "ai"
+      ? (getSelectedCard(1) ? "AI 선택 완료" : "AI 대기 중")
+      : (getSelectedCard(1) ? "선택 완료" : "카드를 선택하세요.");
+}
+
+function renderMatchBanner() {
+  const outcome = state.latestMatchOutcome;
+  const roundSummary = state.latestRoundSummary;
+  meongseokElements.matchBanner.classList.remove("is-win", "is-lose", "is-draw");
+
+  if (outcome) {
+    meongseokElements.matchBannerTitle.textContent = outcome.title;
+    meongseokElements.matchBannerCopy.textContent = outcome.copy;
+    meongseokElements.matchBanner.classList.add(`is-${outcome.result}`);
+    return;
+  }
+
+  if (roundSummary) {
+    meongseokElements.matchBannerTitle.textContent = roundSummary.title;
+    meongseokElements.matchBannerCopy.textContent = roundSummary.copy;
+    meongseokElements.matchBanner.classList.add(`is-${roundSummary.result}`);
+    return;
+  }
+
+  meongseokElements.matchBannerTitle.textContent = "READY";
+  meongseokElements.matchBannerCopy.textContent = "게임을 시작하면 최종 승패 결과가 여기에 표시됩니다.";
+}
+
+function renderHand(playerIndex) {
+  const container = playerIndex === 0 ? meongseokElements.leftHand : meongseokElements.rightHand;
+  const isAi = state.mode === "ai" && playerIndex === 1;
+  const isGuestLocked = state.room.role === "guest" && playerIndex === 0;
+  container.innerHTML = "";
+
+  for (const card of state.players[playerIndex].deck) {
+    const selected = state.players[playerIndex].selectedId === card.id;
+    const hidden = isAi && !card.used && !selected;
+    const article = document.createElement("article");
+    article.className = "meongseok-game__card";
+    article.innerHTML = `
+      <div class="meongseok-game__card-top">
+        <span class="meongseok-game__card-type">${hidden ? "???" : card.types.map((type) => TYPE_LABEL[type] || type).join("/")}</span>
+        <span class="meongseok-game__card-badge">${hidden ? "비공개" : `ID ${card.id}`}</span>
+      </div>
+      <div class="meongseok-game__card-body">
+        <div class="meongseok-game__card-image-wrap">
+          <img class="meongseok-game__card-image" src="${hidden ? artwork(25) : card.image}" alt="${hidden ? "비공개 카드" : card.name}">
+        </div>
+        <div>
+          <h4 class="meongseok-game__card-name">${hidden ? "미공개 카드" : card.name}</h4>
+          <p class="meongseok-game__card-text">${hidden ? "상대 카드 정보는 공개되지 않습니다." : card.summary}</p>
+          ${renderHpMeter(card, hidden)}
+          <div class="meongseok-game__stat-list">
+            <div class="meongseok-game__stat-item"><span>HP</span><strong>${hidden ? "?" : `${card.currentHp ?? card.hp} / ${card.maxHp ?? card.hp}`}</strong></div>
+            <div class="meongseok-game__stat-item"><span>ATK</span><strong>${hidden ? "?" : card.attack}</strong></div>
+            <div class="meongseok-game__stat-item"><span>SPD</span><strong>${hidden ? "?" : card.speed}</strong></div>
+            <div class="meongseok-game__stat-item"><span>SKL</span><strong>${hidden ? "?" : card.skill}</strong></div>
+          </div>
+        </div>
+      </div>
+      <button class="meongseok-game__card-button${selected ? " is-selected" : ""}" type="button">${card.used ? "사용 완료" : selected ? "선택됨" : "선택"}</button>
+    `;
+
+    const button = article.querySelector(".meongseok-game__card-button");
+    const disabled = !canSelectCard(playerIndex, card) || isAi || (state.mode === "pvp" && ((state.room.role === "guest" && playerIndex === 0) || (state.room.role === "host" && playerIndex === 1))) || isGuestLocked;
+    if (disabled) button.disabled = true;
+    else {
+      button.addEventListener("click", () => {
+        if (state.room.role === "guest") {
+          broadcast("select-card", { cardId: card.id });
+        } else if (state.room.role === "host" || state.room.role === "offline") {
+          selectCard(playerIndex, card.id);
+        }
+      });
+    }
+    container.appendChild(article);
+  }
+}
+
+function renderBattleCard(card, element, emptyText, playerIndex) {
+  if (!card) {
+    element.innerHTML = `<p class="meongseok-game__empty">${emptyText}</p>`;
+    return;
+  }
+
+  const overlayState = getBattleOverlayState(playerIndex);
+  element.innerHTML = `
+    ${overlayState ? `<div class="meongseok-game__battle-overlay ${overlayState.className}">${overlayState.label}</div>` : ""}
+    <div class="meongseok-game__battle-body">
+      <div class="meongseok-game__card-image-wrap">
+        <img class="meongseok-game__card-image" src="${card.image}" alt="${card.name}">
+      </div>
+      <div>
+        <div class="meongseok-game__battle-top">
+          <span class="meongseok-game__card-type">${card.types.map((type) => TYPE_LABEL[type] || type).join("/")}</span>
+          <span class="meongseok-game__card-badge">${card.name}</span>
+        </div>
+        <p class="meongseok-game__card-text">${card.summary}</p>
+        ${renderHpMeter(card)}
+        <div class="meongseok-game__stat-list">
+          <div class="meongseok-game__stat-item"><span>ATK</span><strong>${card.attack}</strong></div>
+          <div class="meongseok-game__stat-item"><span>SPD</span><strong>${card.speed}</strong></div>
+          <div class="meongseok-game__stat-item"><span>SKL</span><strong>${card.skill}</strong></div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderLog() {
   meongseokElements.battleLog.innerHTML = "";
-  if (!meongseokState.log.length) {
-    meongseokElements.battleLog.innerHTML = '<li class="meongseok-game__log-item is-empty">배틀을 시작하면 라운드 기록이 여기에 표시됩니다.</li>';
+  if (state.log.length === 0) {
+    meongseokElements.battleLog.innerHTML = '<li class="meongseok-game__empty">새 게임을 시작하면 전투 기록이 여기에 표시됩니다.</li>';
     return;
   }
-  for (const entry of meongseokState.log) {
+  for (const entry of state.log) {
     const item = document.createElement("li");
-    item.className = "meongseok-game__log-item";
     item.textContent = entry;
     meongseokElements.battleLog.appendChild(item);
   }
 }
 
-function getRarity(card) {
-  const total = getStatTotal(card);
-  if (total >= 520) {
-    return { label: "Epic", className: "is-epic" };
-  }
-  if (total >= 420) {
-    return { label: "Rare", className: "is-rare" };
-  }
-  return { label: "Common", className: "" };
-}
-
-function createHealthMarkup(card) {
-  const percent = Math.max(0, Math.round((card.currentHp / card.hp) * 100));
-  return `
-    <div class="meongseok-game__health-row">
-      <div class="meongseok-game__health-bar">
-        <div class="meongseok-game__health-fill" style="width: ${percent}%;"></div>
-      </div>
-      <span class="meongseok-game__health-text">HP ${card.currentHp} / ${card.hp}</span>
-    </div>
-  `;
-}
-
-function attachTooltipEvents(target, text) {
-  if (!target || !text) {
-    return;
-  }
-  const show = (event) => {
-    meongseokElements.skillTooltip.textContent = text;
-    meongseokElements.skillTooltip.classList.add("is-visible");
-    moveTooltip(event);
-  };
-  const hide = () => {
-    meongseokElements.skillTooltip.classList.remove("is-visible");
-  };
-  target.addEventListener("mouseenter", show);
-  target.addEventListener("mousemove", moveTooltip);
-  target.addEventListener("mouseleave", hide);
-  target.addEventListener("focus", show);
-  target.addEventListener("blur", hide);
-}
-
-function moveTooltip(event) {
-  const x = (event.clientX || 0) + 14;
-  const y = (event.clientY || 0) + 14;
-  meongseokElements.skillTooltip.style.left = `${x}px`;
-  meongseokElements.skillTooltip.style.top = `${y}px`;
-}
-
-function renderHand(playerIndex) {
-  const player = meongseokState.players[playerIndex];
-  const container = playerIndex === 0 ? meongseokElements.leftHand : meongseokElements.rightHand;
-  container.innerHTML = "";
-
-  for (const card of player.hand) {
-    const rarity = getRarity(card);
-    const selected = player.selectedCardId === card.id;
-    const disabled = card.used || playerIndex === 1;
-    const cardElement = document.createElement("article");
-    cardElement.className = `meongseok-game__card${selected ? " is-selected" : ""}${card.used ? " is-used" : ""}`;
-    cardElement.innerHTML = `
-      <div class="meongseok-game__card-top">
-        <div>
-          <span class="meongseok-game__card-badge meongseok-game__type-${card.type}">${TYPE_LABEL[card.type] || card.type}</span>
-          <h4 class="meongseok-game__card-name">${card.name}</h4>
-        </div>
-        <div>
-          <span class="meongseok-game__rarity-badge ${rarity.className}">${rarity.label}</span>
-          <button class="meongseok-game__skill-badge" type="button">${card.skillName}</button>
-        </div>
-      </div>
-      <div class="meongseok-game__card-body">
-        <div class="meongseok-game__card-image-wrap">
-          <img class="meongseok-game__card-image" src="${card.image}" alt="${card.name} 이미지">
-        </div>
-        <div>
-          <p class="meongseok-game__card-description">${card.flavor}</p>
-          <div class="meongseok-game__story-tags">
-            <span class="meongseok-game__theme-badge">${card.skillText}</span>
-            ${card.ability?.isHidden ? '<span class="meongseok-game__rarity-badge is-epic">숨겨진 특성</span>' : ""}
-          </div>
-          ${createHealthMarkup(card)}
-          <div class="meongseok-game__stat-grid">
-            <div class="meongseok-game__stat"><span class="meongseok-game__stat-label">ATK</span><span class="meongseok-game__stat-value">${card.attack}</span></div>
-            <div class="meongseok-game__stat"><span class="meongseok-game__stat-label">DEF</span><span class="meongseok-game__stat-value">${card.defense}</span></div>
-            <div class="meongseok-game__stat"><span class="meongseok-game__stat-label">SPD</span><span class="meongseok-game__stat-value">${card.speed}</span></div>
-          </div>
-        </div>
-      </div>
-      <button class="meongseok-game__card-button${selected ? " is-selected" : ""}" type="button" ${disabled ? "disabled" : ""}>
-        ${card.used ? "사용 완료" : selected ? "선택됨" : "이 카드 선택"}
-      </button>
-    `;
-
-    const skillButton = cardElement.querySelector(".meongseok-game__skill-badge");
-    attachTooltipEvents(skillButton, `${card.skillName}: ${card.skillText}`);
-    if (!disabled) {
-      cardElement.querySelector(".meongseok-game__card-button").addEventListener("click", () => {
-        player.selectedCardId = card.id;
-        meongseokState.players[1].selectedCardId = chooseAiCardId();
-        renderGame();
-      });
-    }
-    container.appendChild(cardElement);
-  }
-}
-
-function renderBattleCard(card, container, placeholder, isWinner) {
-  container.classList.toggle("is-winning", Boolean(card) && isWinner);
-  if (!card) {
-    container.innerHTML = `<p class="meongseok-game__battle-placeholder">${placeholder}</p>`;
-    return;
-  }
-
-  const rarity = getRarity(card);
-  container.innerHTML = `
-    <div class="meongseok-game__battle-card-content">
-      <div class="meongseok-game__battle-image-wrap">
-        <img class="meongseok-game__battle-image" src="${card.image}" alt="${card.name} 이미지">
-      </div>
-      <div>
-        <div class="meongseok-game__battle-top">
-          <span class="meongseok-game__battle-badge meongseok-game__type-${card.type}">${TYPE_LABEL[card.type] || card.type}</span>
-          <div>
-            <span class="meongseok-game__rarity-badge ${rarity.className}">${rarity.label}</span>
-            <button class="meongseok-game__skill-badge" type="button">${card.skillName}</button>
-          </div>
-        </div>
-        <h4 class="meongseok-game__battle-name">${card.name}</h4>
-        <p class="meongseok-game__battle-meta">${card.skillText}</p>
-        ${createHealthMarkup(card)}
-        <p class="meongseok-game__battle-meta">ATK ${card.attack} / DEF ${card.defense} / SPD ${card.speed}</p>
-      </div>
-    </div>
-  `;
-  attachTooltipEvents(container.querySelector(".meongseok-game__skill-badge"), `${card.skillName}: ${card.skillText}`);
-}
-
-function updateScoreboard() {
-  meongseokElements.leftPlayerScore.textContent = String(meongseokState.players[0].score);
-  meongseokElements.rightPlayerScore.textContent = String(meongseokState.players[1].score);
-  meongseokElements.leftPlayerDeckCount.textContent = `남은 카드 ${getAvailableCards(0).length}장`;
-  meongseokElements.rightPlayerDeckCount.textContent = `남은 카드 ${getAvailableCards(1).length}장`;
-  meongseokElements.roundIndicator.textContent = `${meongseokState.round} / ${meongseokState.maxRounds}`;
-  meongseokElements.leftSelectionState.textContent = meongseokState.players[0].selectedCardId ? "선택 완료" : "카드를 선택해 주세요.";
-  meongseokElements.rightSelectionState.textContent = meongseokState.players[1].selectedCardId ? "AI 선택 완료" : "AI가 카드를 고르는 중입니다.";
-  meongseokElements.turnIndicator.textContent = meongseokState.started
-    ? `${meongseokState.difficulty.toUpperCase()} 난이도의 AI와 대결 중입니다.`
-    : "배틀 시작 버튼을 누르면 6라운드가 시작됩니다.";
-}
-
-function openResultModal(text) {
-  meongseokElements.resultModalText.textContent = text;
-  meongseokElements.resultModalBackdrop.classList.remove("is-hidden");
-}
-
-function closeResultModal() {
-  meongseokElements.resultModalBackdrop.classList.add("is-hidden");
-}
-
-function renderGame() {
-  if (!meongseokElements.root) {
-    return;
-  }
-  meongseokElements.difficultyEasyButton.classList.toggle("is-active", meongseokState.difficulty === "easy");
-  meongseokElements.difficultyNormalButton.classList.toggle("is-active", meongseokState.difficulty === "normal");
-  meongseokElements.difficultyHardButton.classList.toggle("is-active", meongseokState.difficulty === "hard");
-  meongseokElements.resolveRoundButton.disabled = !canResolveRound();
-  meongseokElements.matchStatus.textContent = meongseokState.gameOver
-    ? buildWinnerMessage()
-    : meongseokState.started
-      ? "내 팀 카드 하나를 선택하면 AI 카드와 라운드가 진행됩니다."
-      : "도감에서 6마리를 담아오면 내 팀으로 배틀을 시작할 수 있습니다.";
-  meongseokElements.roundResult.textContent = meongseokState.resultText;
-  renderDraftSummary();
-  updateScoreboard();
+function renderAll() {
+  meongseokElements.modeAiButton.classList.toggle("is-active", state.mode === "ai");
+  meongseokElements.modePvpButton.classList.toggle("is-active", state.mode === "pvp");
+  meongseokElements.difficultyGroup.style.display = state.mode === "ai" ? "block" : "none";
+  meongseokElements.difficultyEasyButton.classList.toggle("is-active", state.difficulty === "easy");
+  meongseokElements.difficultyNormalButton.classList.toggle("is-active", state.difficulty === "normal");
+  meongseokElements.difficultyHardButton.classList.toggle("is-active", state.difficulty === "hard");
+  meongseokElements.resolveRoundButton.disabled = !(hasActiveBattle() || (getSelectedCard(0) && getSelectedCard(1))) || Boolean(state.latestMatchOutcome);
+  meongseokElements.roundResult.textContent = state.log[0] || "양쪽 플레이어가 카드를 고르면 전투가 시작되고, HP 0이 될 때까지 계속 교전합니다.";
+  renderStatus();
+  renderRoomStatus();
+  renderImportedTeamPreview();
+  renderScoreboard();
+  renderMatchBanner();
+  renderRankingList(meongseokElements.aiRankingList, state.rankings.ai);
+  renderRankingList(meongseokElements.pvpRankingList, state.rankings.pvp);
   renderHand(0);
   renderHand(1);
-  renderBattleCard(meongseokState.battleCards[0], meongseokElements.leftBattleCard, "내 팀 카드 대기 중", meongseokState.lastWinner === 0);
-  renderBattleCard(meongseokState.battleCards[1], meongseokElements.rightBattleCard, "AI 카드 대기 중", meongseokState.lastWinner === 1);
+  renderBattleCard((state.battleCards[0] || state.displayBattleCards[0]), meongseokElements.leftBattleCard, "플레이어 1의 카드 대기 중", 0);
+  renderBattleCard((state.battleCards[1] || state.displayBattleCards[1]), meongseokElements.rightBattleCard, "상대 카드 대기 중", 1);
   renderLog();
 }
 
-async function hydrateDraftTeam() {
-  try {
-    meongseokState.draftTeam = await fetchDraftTeam();
-  } catch (error) {
-    console.error(error);
-    meongseokState.draftTeam = [];
-  }
-  renderGame();
-}
+window.addEventListener("team-builder:team-selected", (event) => {
+  if (importTeamFromPayload(event.detail || {}, "event:team-builder:team-selected")) renderAll();
+});
 
-function buildAiDeck(size) {
-  return shuffle(AI_POOL).slice(0, size).map(normalizeAiCard);
-}
-
-async function startMatch() {
-  await hydrateDraftTeam();
-  if (meongseokState.draftTeam.length !== 6) {
-    meongseokState.started = false;
-    meongseokState.resultText = "도감에서 정확히 6마리를 팀 후보에 담아와야 배틀을 시작할 수 있습니다.";
-    renderGame();
-    return;
-  }
-
-  const leftDeck = meongseokState.draftTeam.map(normalizeDraftCard);
-  const rightDeck = buildAiDeck(6);
-  meongseokState.started = true;
-  meongseokState.gameOver = false;
-  meongseokState.round = 0;
-  meongseokState.maxRounds = 6;
-  meongseokState.log = [];
-  meongseokState.players[0] = { id: 0, name: "내 팀", hand: leftDeck, score: 0, selectedCardId: null };
-  meongseokState.players[1] = { id: 1, name: "AI 팀", hand: rightDeck, score: 0, selectedCardId: chooseAiCardId() };
-  meongseokState.battleCards = [null, null];
-  meongseokState.lastWinner = null;
-  meongseokState.resultText = "배틀이 시작되었습니다. 내 팀 카드 하나를 선택하세요.";
-  closeResultModal();
-  renderGame();
-}
+window.addEventListener("storage", () => {
+  if (tryLoadImportedTeam()) renderAll();
+});
 
 if (meongseokElements.root) {
-  meongseokElements.difficultyEasyButton.addEventListener("click", () => {
-    meongseokState.difficulty = "easy";
-    renderGame();
+  tryLoadImportedTeam();
+  meongseokElements.modeAiButton.addEventListener("click", () => setMode("ai"));
+  meongseokElements.modePvpButton.addEventListener("click", () => setMode("pvp"));
+  meongseokElements.difficultyEasyButton.addEventListener("click", () => setDifficulty("easy"));
+  meongseokElements.difficultyNormalButton.addEventListener("click", () => setDifficulty("normal"));
+  meongseokElements.difficultyHardButton.addEventListener("click", () => setDifficulty("hard"));
+  meongseokElements.startMatchButton.addEventListener("click", () => {
+    if (state.room.role === "guest") broadcast("start-match", { useImportedTeam: false });
+    else startMatch(false);
   });
-  meongseokElements.difficultyNormalButton.addEventListener("click", () => {
-    meongseokState.difficulty = "normal";
-    renderGame();
-  });
-  meongseokElements.difficultyHardButton.addEventListener("click", () => {
-    meongseokState.difficulty = "hard";
-    renderGame();
-  });
-  meongseokElements.startMatchButton.addEventListener("click", startMatch);
-  meongseokElements.resolveRoundButton.addEventListener("click", resolveRound);
-  meongseokElements.resetLogButton.addEventListener("click", () => {
-    meongseokState.log = [];
-    renderLog();
-  });
-  meongseokElements.closeResultModalButton.addEventListener("click", closeResultModal);
-  meongseokElements.restartMatchButton.addEventListener("click", startMatch);
-  meongseokElements.resultModalBackdrop.addEventListener("click", (event) => {
-    if (event.target === meongseokElements.resultModalBackdrop) {
-      closeResultModal();
+  meongseokElements.loadTeamButton.addEventListener("click", () => {
+    if (!tryLoadImportedTeam()) {
+      meongseokElements.importStatus.textContent = "아직 읽을 수 있는 외부 팀 데이터가 없습니다.";
+      return;
     }
+    if (state.room.role === "guest") broadcast("start-match", { useImportedTeam: true });
+    else startMatch(true);
   });
-  hydrateDraftTeam();
+  meongseokElements.createRoomButton.addEventListener("click", createRoom);
+  meongseokElements.joinRoomButton.addEventListener("click", joinRoom);
+  meongseokElements.leaveRoomButton.addEventListener("click", () => {
+    leaveRoom();
+    renderAll();
+  });
+  meongseokElements.resolveRoundButton.addEventListener("click", () => {
+    if (state.room.role === "guest") broadcast("resolve-round");
+    else resolveRound();
+  });
+  meongseokElements.resetLogButton.addEventListener("click", () => {
+    state.log = [];
+    renderLog();
+    if (state.room.role === "host") broadcast("state-sync", serializeState());
+  });
+  renderAll();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
