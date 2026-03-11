@@ -3,10 +3,16 @@ export interface SharedDocumentAdapter {
   disconnect: () => void;
   getText: () => string;
   applyLocalChange: (nextValue: string) => void;
+  subscribe: (listener: (nextValue: string) => void) => () => void;
 }
 
 export function createSharedDocumentAdapter(roomId: string, documentId: string): SharedDocumentAdapter {
   let value = '';
+  const listeners = new Set<(nextValue: string) => void>();
+
+  const notifyListeners = () => {
+    listeners.forEach((listener) => listener(value));
+  };
 
   return {
     connect() {
@@ -20,6 +26,14 @@ export function createSharedDocumentAdapter(roomId: string, documentId: string):
     },
     applyLocalChange(nextValue: string) {
       value = nextValue;
+      notifyListeners();
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+
+      return () => {
+        listeners.delete(listener);
+      };
     },
   };
 }
