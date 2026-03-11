@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/global_bgm.css') }}">
   {% for feature in features %}
   <link rel="stylesheet" href="{{ url_for('static', filename=feature.css_file) }}">
   {% endfor %}
@@ -94,5 +95,6 @@
   {% for feature in features %}
   <script src="{{ url_for('static', filename=feature.js_file) }}"></script>
   {% endfor %}
+  <script src="{{ url_for('static', filename='js/global_bgm.js') }}"></script>
 </body>
 </html>

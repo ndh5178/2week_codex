@@ -840,10 +840,10 @@ async function ensureAllFormsLoaded() {
     return;
   }
 
-  dataStatus.textContent = "? ???? ??? ???? ????...";
+  dataStatus.textContent = "전체 폼 도감 데이터를 불러오는 중입니다...";
   const response = await fetch(`${API_BASE}/pokemon?limit=2000&offset=0`);
   if (!response.ok) {
-    throw new Error("? ?? ??? ???? ?????.");
+    throw new Error("폼 도감 데이터를 불러오지 못했습니다.");
   }
 
   const data = await response.json();
@@ -856,7 +856,7 @@ async function ensureAllFormsLoaded() {
   hasLoadedForms = true;
   totalCount.textContent = String(allPokemon.length);
   populateFilterOptions();
-  dataStatus.textContent = `${getKoreanDateLabel()} ?? ?? ${basePokemon.length}??, ? ?? ? ${allPokemon.length}??? ??????.`;
+  dataStatus.textContent = `${getKoreanDateLabel()} 기준 기본 포켓몬 ${basePokemon.length}마리, 폼 포함 총 ${allPokemon.length}마리를 불러왔습니다.`;
 }
 
 
@@ -1050,10 +1050,10 @@ function renderRegionSections(pokemonList) {
         <div class="region-heading">
           <div>
             <p class="section-label region-label">No Results</p>
-            <h3 class="region-name">??? ?? ???? ???</h3>
+            <h3 class="region-name">조건에 맞는 포켓몬이 없어요</h3>
           </div>
         </div>
-        <p class="section-copy">???? ??? ???? ?? ??? ???.</p>
+        <p class="section-copy">검색어나 필터 조건을 바꿔서 다시 찾아보세요.</p>
       </section>
     `;
     cardEntries = [];
@@ -1377,7 +1377,7 @@ formFilter.addEventListener("change", async () => {
       await ensureAllFormsLoaded();
     } catch (error) {
       console.error(error);
-      dataStatus.textContent = "? ???? ???? ?????. ?? ??? ??????.";
+      dataStatus.textContent = "폼 데이터를 불러오지 못했습니다. 기본 도감으로 돌아갑니다.";
       formFilter.value = "base";
     }
   }

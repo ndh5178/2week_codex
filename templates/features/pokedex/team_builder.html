@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='features/pokedex/team_builder.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/global_bgm.css') }}">
 </head>
 <body class="builder-body">
   <div class="builder-shell">
@@ -92,7 +93,7 @@
       {% if messages %}
       <div class="alert-modal-backdrop" id="alertModalBackdrop" role="presentation">
         <div class="alert-modal" role="dialog" aria-modal="true" aria-labelledby="alertModalTitle">
-          <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="알림 닫기">×</button>
+          <button class="alert-modal-close" id="alertModalClose" type="button" aria-label="알림 닫기">&times;</button>
           <p class="eyebrow">Notice</p>
           <h2 id="alertModalTitle">알림</h2>
           <div class="alert-modal-body" id="alertModalBody">
@@ -256,16 +257,36 @@
       <div class="saved-team-members"></div>
       <div class="saved-team-actions">
         <button class="secondary-action saved-team-button" type="button">이 팀 다시 보기</button>
+        <button class="secondary-action saved-team-button is-danger" type="button">삭제</button>
       </div>
     </article>
   </template>
+
+  <div class="alert-modal-backdrop is-hidden" id="deleteConfirmBackdrop" role="presentation">
+    <div class="alert-modal" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+      <button class="alert-modal-close" id="deleteConfirmClose" type="button" aria-label="알림 닫기">&times;</button>
+      <p class="eyebrow">Delete Team</p>
+      <h2 id="deleteConfirmTitle">삭제하시겠습니까?</h2>
+      <div class="alert-modal-body">
+        <article class="alert-modal-message is-warning">
+          <strong>안내</strong>
+          <p id="deleteConfirmMessage">선택한 추천 팀이 최근 저장 목록에서 제거됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+        </article>
+      </div>
+      <div class="alert-modal-actions">
+        <button class="secondary-action alert-modal-action alert-modal-action--secondary" id="deleteConfirmCancel" type="button">취소</button>
+        <button class="primary-action alert-modal-action" id="deleteConfirmAccept" type="button">확인</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     window.teamBuilderBootstrap = {{ {
       'isLoggedIn': user is not none,
       'saveEnabled': team_save_enabled,
       'saveApi': url_for('pokedex.save_team_build'),
-      'savedApi': url_for('pokedex.saved_team_builds')
+      'savedApi': url_for('pokedex.saved_team_builds'),
+      'deleteApiBase': '/api/pokedex/team-builder'
     } | tojson }};
     window.teamBuilderConfig = {{ {
       'isLoggedIn': user is not none,
@@ -275,5 +296,6 @@
     } | tojson }};
   </script>
   <script src="{{ url_for('static', filename='features/pokedex/team_builder.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/global_bgm.js') }}"></script>
 </body>
 </html>

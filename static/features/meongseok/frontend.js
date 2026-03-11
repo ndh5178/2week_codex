@@ -60,18 +60,19 @@ const TYPE_ADVANTAGE = {
 
 const EXTERNAL_TEAM_KEYS = ["teamBuilderTeam", "pokedexTeamBuilderTeam", "pokemonTeamBuilderTeam", "selectedBattleTeam", "selectedPokemonTeam"];
 const RANKING_KEY = "meongseok-game-rankings-v1";
+const meongseokGameConfig = window.meongseokGameConfig || { isLoggedIn: false, endpoints: {} };
 
 const DEFAULT_POOL = [
-  { id: 6, name: "리자몽", types: ["fire"], hp: 82, attack: 94, speed: 100, skill: 88, image: artwork(6), summary: "폭발적인 화력으로 짧은 승부에 강합니다." },
-  { id: 9, name: "거북왕", types: ["water"], hp: 90, attack: 83, speed: 78, skill: 86, image: artwork(9), summary: "탄탄한 방어와 안정적인 밸런스를 갖춘 카드입니다." },
-  { id: 3, name: "이상해꽃", types: ["grass"], hp: 88, attack: 82, speed: 80, skill: 90, image: artwork(3), summary: "지속력과 제어력이 좋은 카드입니다." },
-  { id: 25, name: "피카츄", types: ["electric"], hp: 60, attack: 72, speed: 112, skill: 84, image: artwork(25), summary: "빠른 선공으로 흐름을 가져옵니다." },
-  { id: 150, name: "뮤츠", types: ["psychic"], hp: 106, attack: 110, speed: 100, skill: 120, image: artwork(150), summary: "전설급 스탯을 가진 강력한 카드입니다." },
-  { id: 149, name: "망나뇽", types: ["dragon"], hp: 96, attack: 104, speed: 80, skill: 92, image: artwork(149), summary: "높은 공격력으로 후반 역전에 강합니다." },
-  { id: 94, name: "팬텀", types: ["ghost", "poison"], hp: 66, attack: 88, speed: 110, skill: 94, image: artwork(94), summary: "변수 창출에 특화된 카드입니다." },
-  { id: 448, name: "루카리오", types: ["fighting", "steel"], hp: 78, attack: 104, speed: 90, skill: 88, image: artwork(448), summary: "공격과 순발력을 겸비했습니다." },
-  { id: 445, name: "한카리아스", types: ["dragon", "ground"], hp: 108, attack: 118, speed: 92, skill: 84, image: artwork(445), summary: "정면 승부에서 매우 강합니다." },
-  { id: 658, name: "개굴닌자", types: ["water", "dark"], hp: 72, attack: 95, speed: 122, skill: 90, image: artwork(658), summary: "가장 빠른 축에 드는 기습형 카드입니다." }
+  { id: 6, name: "리자몽", types: ["fire"], hp: 82, attack: 94, speed: 100, skill: 88, image: artwork(6), ability: { name: "Blaze", description: "Boosts power when HP is low.", isHidden: false }, summary: "High burst damage in short fights." },
+  { id: 9, name: "거북왕", types: ["water"], hp: 90, attack: 83, speed: 78, skill: 86, image: artwork(9), ability: { name: "Torrent", description: "Boosts water attacks when HP is low.", isHidden: false }, summary: "A stable tank with balanced offense and defense." },
+  { id: 3, name: "이상해꽃", types: ["grass"], hp: 88, attack: 82, speed: 80, skill: 90, image: artwork(3), ability: { name: "Overgrow", description: "Boosts grass attacks when HP is low.", isHidden: false }, summary: "Strong sustain and control options." },
+  { id: 25, name: "피카츄", types: ["electric"], hp: 60, attack: 72, speed: 112, skill: 84, image: artwork(25), ability: { name: "Static", description: "Fast pressure and initiative advantage.", isHidden: false }, summary: "Takes tempo with quick first strikes." },
+  { id: 150, name: "뮤츠", types: ["psychic"], hp: 106, attack: 110, speed: 100, skill: 120, image: artwork(150), ability: { name: "Pressure", description: "Puts strong pressure on the opponent.", isHidden: false }, summary: "Legend-level stats with overwhelming pressure." },
+  { id: 149, name: "망나뇽", types: ["dragon"], hp: 96, attack: 104, speed: 80, skill: 92, image: artwork(149), ability: { name: "Multiscale", description: "Reduces damage when health is high.", isHidden: false }, summary: "Excellent closer with strong late-game presence." },
+  { id: 94, name: "팬텀", types: ["ghost", "poison"], hp: 66, attack: 88, speed: 110, skill: 94, image: artwork(94), ability: { name: "Cursed Body", description: "Disrupts enemy flow with utility pressure.", isHidden: false }, summary: "Great at creating swing turns and pressure." },
+  { id: 448, name: "루카리오", types: ["fighting", "steel"], hp: 78, attack: 104, speed: 90, skill: 88, image: artwork(448), ability: { name: "Justified", description: "Gets stronger when it finds an opening.", isHidden: false }, summary: "A sharp all-round attacker with momentum." },
+  { id: 445, name: "한카리아스", types: ["dragon", "ground"], hp: 108, attack: 118, speed: 92, skill: 84, image: artwork(445), ability: { name: "Rough Skin", description: "Trades efficiently in direct combat.", isHidden: false }, summary: "Dominates direct head-to-head battles." },
+  { id: 658, name: "개굴닌자", types: ["water", "dark"], hp: 72, attack: 95, speed: 122, skill: 90, image: artwork(658), ability: { name: "Protean", description: "Excels at fast tempo and flexible responses.", isHidden: false }, summary: "One of the fastest cards in the pool." }
 ];
 
 const state = {
@@ -179,10 +180,40 @@ function normalizeTypes(value) {
   return ["normal"];
 }
 
+function normalizeAbility(ability) {
+  if (!ability) {
+    return null;
+  }
+  if (typeof ability === "string") {
+    return { name: ability, description: "", isHidden: false };
+  }
+  return {
+    name: String(ability.name || ability.label || "\ud2b9\uc131 \ubbf8\ud655\uc778"),
+    description: String(ability.description || ability.effect || ""),
+    isHidden: Boolean(ability.isHidden)
+  };
+}
+
+function normalizeAbility(ability) {
+  if (!ability) {
+    return null;
+  }
+  if (typeof ability === "string") {
+    return { name: ability, description: "", isHidden: false };
+  }
+  return {
+    name: String(ability.name || ability.label || "특성 미확인"),
+    description: String(ability.description || ability.effect || ""),
+    isHidden: Boolean(ability.isHidden)
+  };
+}
+
 function normalizeExternalMember(member, index) {
   const stats = member.stats || {};
   const types = normalizeTypes(member.types || member.typeNames || member.type);
   const id = Number(member.id ?? member.pokemonId ?? member.dexNumber ?? index + 1);
+  const ability = normalizeAbility(member.ability);
+  const summarySuffix = ability?.name ? ` · 특성 ${ability.name}${ability.isHidden ? " (숨특)" : ""}` : "";
   return {
     id,
     name: String(member.displayName ?? member.name ?? `팀 카드 ${index + 1}`),
@@ -192,7 +223,8 @@ function normalizeExternalMember(member, index) {
     speed: Number(member.speed ?? stats.speed ?? stats.Speed ?? 70),
     skill: Number(member.skill ?? stats.specialAttack ?? stats.specialDefense ?? stats.SpecialAttack ?? 75),
     image: String(member.imageUrl ?? member.image ?? artwork(id)),
-    summary: `${types.map((type) => TYPE_LABEL[type] || type).join("/")} 타입 팀 빌더 연동 카드`
+    ability,
+    summary: `${types.map((type) => TYPE_LABEL[type] || type).join("/")} 타입 팀 빌더 연동 카드${summarySuffix}`
   };
 }
 
@@ -225,6 +257,48 @@ function tryLoadImportedTeam() {
   return false;
 }
 
+async function fetchLatestSavedTeam() {
+  if (!meongseokGameConfig.isLoggedIn || !meongseokGameConfig.endpoints?.listTeams) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(meongseokGameConfig.endpoints.listTeams, {
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) {
+      return false;
+    }
+
+    const payload = await response.json();
+    const teams = Array.isArray(payload.teams) ? payload.teams : [];
+    const latestTeam = teams[0];
+    if (!latestTeam) {
+      return false;
+    }
+
+    if (!importTeamFromPayload(latestTeam, `saved-team:${latestTeam.team_name || latestTeam.id}`)) {
+      return false;
+    }
+
+    try {
+      window.localStorage.setItem("selectedBattleTeam", JSON.stringify(latestTeam));
+    } catch (_error) {
+      // Ignore storage sync failures; this page can still use the in-memory team.
+    }
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function loadImportedTeamForBattle() {
+  if (await fetchLatestSavedTeam()) {
+    return true;
+  }
+  return tryLoadImportedTeam();
+}
+
 function getTypeBonus(attackerTypes, defenderTypes) {
   for (const type of attackerTypes) {
     if ((TYPE_ADVANTAGE[type] || []).some((winner) => defenderTypes.includes(winner))) {
@@ -234,19 +308,106 @@ function getTypeBonus(attackerTypes, defenderTypes) {
   return 0;
 }
 
+function abilityText(card) {
+  return `${card.ability?.name || ""} ${card.ability?.description || ""}`.toLowerCase();
+}
+
+function formatAbilityLabel(card) {
+  if (!card.ability?.name) {
+    return "특성 없음";
+  }
+  return `${card.ability.name}${card.ability.isHidden ? " (숨특)" : ""}`;
+}
+
+function includesAbilityKeyword(text, keywords) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function getAbilityModifiers(card, opponent = null) {
+  const textValue = abilityText(card);
+  const tags = new Set();
+  const modifiers = {
+    attackBonus: 0,
+    speedBonus: 0,
+    skillBonus: 0,
+    hpBonus: 0,
+    flatDamageBonus: 0,
+    damageMultiplier: 1,
+    damageTakenMultiplier: 1,
+    initiativeBonus: 0,
+    tags
+  };
+
+  if (!textValue.trim()) {
+    return modifiers;
+  }
+
+  if (includesAbilityKeyword(textValue, ["blaze", "torrent", "overgrow", "justified", "맹화", "급류", "심록", "정의의마음", "공격", "화력", "위력"])) {
+    modifiers.attackBonus += 12;
+    modifiers.flatDamageBonus += 6;
+    tags.add("공격 강화");
+  }
+  if (includesAbilityKeyword(textValue, ["pressure", "protean", "cursed body", "프레셔", "변환자재", "저주받은바디", "특수공격", "기술", "스킬"])) {
+    modifiers.skillBonus += 10;
+    modifiers.damageMultiplier += 0.08;
+    tags.add("기술 강화");
+  }
+  if (includesAbilityKeyword(textValue, ["static", "정전기", "speed", "fast", "initiative", "스피드", "속도", "선공", "빠른"])) {
+    modifiers.speedBonus += 14;
+    modifiers.initiativeBonus += 12;
+    tags.add("선공 보정");
+  }
+  if (includesAbilityKeyword(textValue, ["multiscale", "rough skin", "멀티스케일", "까칠한피부", "defense", "reduce damage", "방어", "반감", "데미지를 줄"])) {
+    modifiers.hpBonus += 12;
+    modifiers.damageTakenMultiplier -= 0.12;
+    tags.add("방어 보정");
+  }
+  if (includesAbilityKeyword(textValue, ["recover", "heal", "회복", "체력", "hp가 줄면", "지속력"])) {
+    modifiers.hpBonus += 10;
+    tags.add("생존 보정");
+  }
+  if (opponent && includesAbilityKeyword(textValue, ["fire", "water", "electric", "grass", "불꽃", "물", "전기", "풀"])) {
+    const matchupTypes = ["fire", "water", "electric", "grass"];
+    if (opponent.types.some((type) => matchupTypes.includes(type))) {
+      modifiers.flatDamageBonus += 4;
+      tags.add("상성 대응");
+    }
+  }
+
+  if (card.ability?.isHidden) {
+    modifiers.skillBonus += 4;
+    tags.add("숨특 보정");
+  }
+
+  modifiers.damageTakenMultiplier = Math.max(0.72, modifiers.damageTakenMultiplier);
+  return modifiers;
+}
+
+function getCombatSnapshot(card, opponent = null) {
+  const modifiers = getAbilityModifiers(card, opponent);
+  return {
+    attack: card.attack + modifiers.attackBonus,
+    speed: card.speed + modifiers.speedBonus,
+    skill: card.skill + modifiers.skillBonus,
+    effectiveHp: (card.currentHp ?? card.hp) + modifiers.hpBonus,
+    modifiers
+  };
+}
+
 function estimateValue(card, opponent) {
   const typeBonus = opponent ? getTypeBonus(card.types, opponent.types) : 0;
-  const effectiveHp = card.currentHp ?? card.hp;
-  return card.attack * 1.15 + card.speed + card.skill + effectiveHp * 0.45 + typeBonus;
+  const snapshot = getCombatSnapshot(card, opponent);
+  return (snapshot.attack * 1.15 + snapshot.speed + snapshot.skill + snapshot.effectiveHp * 0.45 + typeBonus + snapshot.modifiers.flatDamageBonus) * snapshot.modifiers.damageMultiplier;
 }
 
 function estimateCounterScore(card, opponent) {
   if (!opponent) return estimateValue(card, null);
   const myPressure = estimateValue(card, opponent);
   const enemyPressure = estimateValue(opponent, card);
-  const speedEdge = card.speed > opponent.speed ? 10 : card.speed === opponent.speed ? 4 : 0;
-  const effectiveHp = card.currentHp ?? card.hp;
-  const hpBuffer = Math.max(0, effectiveHp - opponent.attack * 0.4);
+  const mySnapshot = getCombatSnapshot(card, opponent);
+  const enemySnapshot = getCombatSnapshot(opponent, card);
+  const speedEdge = mySnapshot.speed > enemySnapshot.speed ? 10 : mySnapshot.speed === enemySnapshot.speed ? 4 : 0;
+  const hpBuffer = Math.max(0, mySnapshot.effectiveHp - enemySnapshot.attack * 0.4);
   return myPressure - enemyPressure * 0.45 + speedEdge + hpBuffer * 0.08;
 }
 
@@ -292,15 +453,29 @@ function canSelectCard(playerIndex, card) {
 
 function calculateDamage(attacker, defender) {
   const typeBonus = getTypeBonus(attacker.types, defender.types);
-  const base = attacker.attack * 0.34 + attacker.skill * 0.24 + attacker.speed * 0.12 + typeBonus;
-  return Math.max(8, Math.round(base));
+  const attackerSnapshot = getCombatSnapshot(attacker, defender);
+  const defenderSnapshot = getCombatSnapshot(defender, attacker);
+  const base = attackerSnapshot.attack * 0.34 + attackerSnapshot.skill * 0.24 + attackerSnapshot.speed * 0.12 + typeBonus + attackerSnapshot.modifiers.flatDamageBonus;
+  const damage = Math.max(
+    8,
+    Math.round(base * attackerSnapshot.modifiers.damageMultiplier * defenderSnapshot.modifiers.damageTakenMultiplier)
+  );
+  return {
+    damage,
+    attackerSnapshot,
+    defenderSnapshot
+  };
 }
 
 function getBattleOrder(leftCard, rightCard) {
-  if (leftCard.speed === rightCard.speed) {
-    return leftCard.skill >= rightCard.skill ? [0, 1] : [1, 0];
+  const leftSnapshot = getCombatSnapshot(leftCard, rightCard);
+  const rightSnapshot = getCombatSnapshot(rightCard, leftCard);
+  const leftPriority = leftSnapshot.speed + leftSnapshot.modifiers.initiativeBonus;
+  const rightPriority = rightSnapshot.speed + rightSnapshot.modifiers.initiativeBonus;
+  if (leftPriority === rightPriority) {
+    return leftSnapshot.skill >= rightSnapshot.skill ? [0, 1] : [1, 0];
   }
-  return leftCard.speed > rightCard.speed ? [0, 1] : [1, 0];
+  return leftPriority > rightPriority ? [0, 1] : [1, 0];
 }
 
 function handleKnockout(winnerIndex, loserIndex) {
@@ -671,9 +846,17 @@ function resolveRound(fromRemote = false) {
     const defender = state.battleCards[defenderIndex];
     if (!attacker || !defender || attacker.currentHp <= 0 || defender.currentHp <= 0) continue;
 
-    const damage = calculateDamage(attacker, defender);
-    defender.currentHp = Math.max(0, defender.currentHp - damage);
-    turnLogs.push(`${attacker.name}의 공격! ${defender.name}에게 ${damage} 데미지, 남은 HP ${defender.currentHp}`);
+    const damageResult = calculateDamage(attacker, defender);
+    defender.currentHp = Math.max(0, defender.currentHp - damageResult.damage);
+    const abilityNotes = [];
+    if (attacker.ability?.name && damageResult.attackerSnapshot.modifiers.tags.size > 0) {
+      abilityNotes.push(`${attacker.ability.name} 보정`);
+    }
+    if (defender.ability?.name && damageResult.defenderSnapshot.modifiers.tags.size > 0) {
+      abilityNotes.push(`${defender.ability.name} 방어 보정`);
+    }
+    const abilitySuffix = abilityNotes.length ? ` (${abilityNotes.join(", ")})` : "";
+    turnLogs.push(`${attacker.name}의 공격! ${defender.name}에게 ${damageResult.damage} 데미지, 남은 HP ${defender.currentHp}${abilitySuffix}`);
 
     if (defender.currentHp <= 0) break;
   }
@@ -804,7 +987,7 @@ function renderHand(playerIndex) {
     article.className = "meongseok-game__card";
     article.innerHTML = `
       <div class="meongseok-game__card-top">
-        <span class="meongseok-game__card-type">${hidden ? "???" : card.types.map((type) => TYPE_LABEL[type] || type).join("/")}</span>
+        <span class="meongseok-game__card-type">${hidden ? "HIDDEN" : card.types.map((type) => TYPE_LABEL[type] || type).join("/")}</span>
         <span class="meongseok-game__card-badge">${hidden ? "비공개" : `ID ${card.id}`}</span>
       </div>
       <div class="meongseok-game__card-body">
@@ -861,6 +1044,7 @@ function renderBattleCard(card, element, emptyText, playerIndex) {
           <span class="meongseok-game__card-badge">${card.name}</span>
         </div>
         <p class="meongseok-game__card-text">${card.summary}</p>
+        <p class="meongseok-game__card-text">특성: ${formatAbilityLabel(card)}</p>
         ${renderHpMeter(card)}
         <div class="meongseok-game__stat-list">
           <div class="meongseok-game__stat-item"><span>ATK</span><strong>${card.attack}</strong></div>
@@ -917,7 +1101,11 @@ window.addEventListener("storage", () => {
 });
 
 if (meongseokElements.root) {
-  tryLoadImportedTeam();
+  loadImportedTeamForBattle().then((loaded) => {
+    if (loaded) {
+      renderAll();
+    }
+  });
   meongseokElements.modeAiButton.addEventListener("click", () => setMode("ai"));
   meongseokElements.modePvpButton.addEventListener("click", () => setMode("pvp"));
   meongseokElements.difficultyEasyButton.addEventListener("click", () => setDifficulty("easy"));
@@ -927,11 +1115,16 @@ if (meongseokElements.root) {
     if (state.room.role === "guest") broadcast("start-match", { useImportedTeam: false });
     else startMatch(false);
   });
-  meongseokElements.loadTeamButton.addEventListener("click", () => {
-    if (!tryLoadImportedTeam()) {
-      meongseokElements.importStatus.textContent = "아직 읽을 수 있는 외부 팀 데이터가 없습니다.";
+  meongseokElements.loadTeamButton.addEventListener("click", async () => {
+    meongseokElements.importStatus.textContent = "\ub0b4 \ud300 \ub370\uc774\ud130\ub97c \ud655\uc778\ud558\ub294 \uc911\uc785\ub2c8\ub2e4...";
+    const loaded = await loadImportedTeamForBattle();
+    if (!loaded) {
+      meongseokElements.importStatus.textContent = meongseokGameConfig.isLoggedIn
+        ? "\uc800\uc7a5\ub41c \ub0b4 \ud300\uc774\ub098 \uc678\ubd80 \ud300 \ub370\uc774\ud130\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4."
+        : "\ub85c\uadf8\uc778 \ud6c4 \uc800\uc7a5\ub41c \ub0b4 \ud300\uc744 \ubd88\ub7ec\uc624\uac70\ub098 \uc678\ubd80 \ud300 \ub370\uc774\ud130\ub97c \uba3c\uc800 \uc900\ube44\ud574 \uc8fc\uc138\uc694.";
       return;
     }
+    renderAll();
     if (state.room.role === "guest") broadcast("start-match", { useImportedTeam: true });
     else startMatch(true);
   });
