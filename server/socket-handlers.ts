@@ -1,36 +1,57 @@
 import type { Server, Socket } from 'socket.io';
-import { SOCKET_EVENTS, type JoinRoomPayload, type PresenceUpdatePayload } from '../types/collab';
+import {
+  SOCKET_EVENTS,
+  type JoinRoomPayload,
+  type PresenceUpdatePayload,
+  type RoomId,
+} from '../types/collab';
 import { RoomStore } from './room-store';
 
 const rooms = new RoomStore();
 
+function broadcastPresenceSnapshot(io: Server, roomId: RoomId) {
+  io.to(roomId).emit(SOCKET_EVENTS.PRESENCE_SNAPSHOT, rooms.getPresenceSnapshot(roomId));
+}
+
+function leaveTrackedRooms(socket: Socket, options?: { leaveSocketRoom?: boolean }) {
+  const removed = rooms.removeSocket(socket.id);
+  if (!removed) {
+    return;
+  }
+
+  if (options?.leaveSocketRoom) {
+    socket.leave(removed.roomId);
+  }
+
+  broadcastPresenceSnapshot(socket.nsp, removed.roomId);
+}
+
 export function registerCollaborationHandlers(io: Server, socket: Socket) {
   socket.on(SOCKET_EVENTS.JOIN_ROOM, (payload: JoinRoomPayload) => {
+    leaveTrackedRooms(socket, { leaveSocketRoom: true });
     socket.join(payload.roomId);
 
-    const room = rooms.getOrCreate(payload.roomId);
-    room.members.set(payload.user.userId, payload.user);
+    const room = rooms.upsertMember(payload.roomId, socket.id, payload.user);
 
-    io.to(payload.roomId).emit(
-      SOCKET_EVENTS.PRESENCE_SNAPSHOT,
-      Array.from(room.members.values()),
-    );
+    broadcastPresenceSnapshot(io, payload.roomId);
+    socket.emit(SOCKET_EVENTS.DOCUMENT_SNAPSHOT, {
+      roomId: payload.roomId,
+      documentId: room.documentId,
+      content: '',
+    });
   });
 
   socket.on(SOCKET_EVENTS.PRESENCE_UPDATED, (payload: PresenceUpdatePayload) => {
-    const room = rooms.getOrCreate(payload.roomId);
-    room.members.set(payload.presence.userId, payload.presence);
+    rooms.upsertMember(payload.roomId, socket.id, payload.presence);
 
     socket.to(payload.roomId).emit(SOCKET_EVENTS.PRESENCE_UPDATED, payload.presence);
   });
 
-  socket.on('disconnecting', () => {
-    for (const roomId of socket.rooms) {
-      if (roomId === socket.id) {
-        continue;
-      }
+  socket.on(SOCKET_EVENTS.LEAVE_ROOM, () => {
+    leaveTrackedRooms(socket, { leaveSocketRoom: true });
+  });
 
-      rooms.removeMember(roomId, socket.id);
-    }
+  socket.on('disconnect', () => {
+    leaveTrackedRooms(socket);
   });
 }
