@@ -74,16 +74,16 @@ const RANKING_KEY = "meongseok-game-rankings-v1";
 const meongseokGameConfig = window.meongseokGameConfig || { isLoggedIn: false, endpoints: {} };
 
 const DEFAULT_POOL = [
-  { id: 6, name: "리자몽", types: ["fire"], hp: 82, attack: 94, speed: 100, skill: 88, image: artwork(6), ability: { name: "Blaze", description: "Boosts power when HP is low.", isHidden: false }, summary: "High burst damage in short fights." },
-  { id: 9, name: "거북왕", types: ["water"], hp: 90, attack: 83, speed: 78, skill: 86, image: artwork(9), ability: { name: "Torrent", description: "Boosts water attacks when HP is low.", isHidden: false }, summary: "A stable tank with balanced offense and defense." },
-  { id: 3, name: "이상해꽃", types: ["grass"], hp: 88, attack: 82, speed: 80, skill: 90, image: artwork(3), ability: { name: "Overgrow", description: "Boosts grass attacks when HP is low.", isHidden: false }, summary: "Strong sustain and control options." },
-  { id: 25, name: "피카츄", types: ["electric"], hp: 60, attack: 72, speed: 112, skill: 84, image: artwork(25), ability: { name: "Static", description: "Fast pressure and initiative advantage.", isHidden: false }, summary: "Takes tempo with quick first strikes." },
-  { id: 150, name: "뮤츠", types: ["psychic"], hp: 106, attack: 110, speed: 100, skill: 120, image: artwork(150), ability: { name: "Pressure", description: "Puts strong pressure on the opponent.", isHidden: false }, summary: "Legend-level stats with overwhelming pressure." },
-  { id: 149, name: "망나뇽", types: ["dragon"], hp: 96, attack: 104, speed: 80, skill: 92, image: artwork(149), ability: { name: "Multiscale", description: "Reduces damage when health is high.", isHidden: false }, summary: "Excellent closer with strong late-game presence." },
-  { id: 94, name: "팬텀", types: ["ghost", "poison"], hp: 66, attack: 88, speed: 110, skill: 94, image: artwork(94), ability: { name: "Cursed Body", description: "Disrupts enemy flow with utility pressure.", isHidden: false }, summary: "Great at creating swing turns and pressure." },
-  { id: 448, name: "루카리오", types: ["fighting", "steel"], hp: 78, attack: 104, speed: 90, skill: 88, image: artwork(448), ability: { name: "Justified", description: "Gets stronger when it finds an opening.", isHidden: false }, summary: "A sharp all-round attacker with momentum." },
-  { id: 445, name: "한카리아스", types: ["dragon", "ground"], hp: 108, attack: 118, speed: 92, skill: 84, image: artwork(445), ability: { name: "Rough Skin", description: "Trades efficiently in direct combat.", isHidden: false }, summary: "Dominates direct head-to-head battles." },
-  { id: 658, name: "개굴닌자", types: ["water", "dark"], hp: 72, attack: 95, speed: 122, skill: 90, image: artwork(658), ability: { name: "Protean", description: "Excels at fast tempo and flexible responses.", isHidden: false }, summary: "One of the fastest cards in the pool." }
+  { id: 6, name: "리자몽", types: ["fire"], hp: 82, attack: 94, speed: 100, skill: 88, image: artwork(6), ability: { name: "맹화", description: "HP가 낮을수록 화력이 강해집니다.", isHidden: false }, summary: "짧은 교전에서 폭발적인 화력을 내는 공격형 카드입니다." },
+  { id: 9, name: "거북왕", types: ["water"], hp: 90, attack: 83, speed: 78, skill: 86, image: artwork(9), ability: { name: "급류", description: "HP가 낮을수록 물 공격이 강해집니다.", isHidden: false }, summary: "공수 밸런스가 좋아 안정적으로 버티는 탱커형 카드입니다." },
+  { id: 3, name: "이상해꽃", types: ["grass"], hp: 88, attack: 82, speed: 80, skill: 90, image: artwork(3), ability: { name: "심록", description: "HP가 낮을수록 풀 공격이 강해집니다.", isHidden: false }, summary: "유지력과 운영 능력이 좋은 컨트롤형 카드입니다." },
+  { id: 25, name: "피카츄", types: ["electric"], hp: 60, attack: 72, speed: 112, skill: 84, image: artwork(25), ability: { name: "정전기", description: "빠른 압박과 선공 싸움에 강합니다.", isHidden: false }, summary: "빠른 선공으로 흐름을 가져오는 스피드형 카드입니다." },
+  { id: 150, name: "뮤츠", types: ["psychic"], hp: 106, attack: 110, speed: 100, skill: 120, image: artwork(150), ability: { name: "프레셔", description: "상대에게 강한 압박을 주는 전투 스타일입니다.", isHidden: false }, summary: "압도적인 종족값으로 상대를 몰아붙이는 에이스 카드입니다." },
+  { id: 149, name: "망나뇽", types: ["dragon"], hp: 96, attack: 104, speed: 80, skill: 92, image: artwork(149), ability: { name: "멀티스케일", description: "체력이 높을 때 받는 피해를 줄입니다.", isHidden: false }, summary: "후반 마무리 능력이 뛰어난 피니셔 카드입니다." },
+  { id: 94, name: "팬텀", types: ["ghost", "poison"], hp: 66, attack: 88, speed: 110, skill: 94, image: artwork(94), ability: { name: "저주받은바디", description: "상대 흐름을 흔들며 압박을 만들어냅니다.", isHidden: false }, summary: "교란과 압박에 강한 변수 창출형 카드입니다." },
+  { id: 448, name: "루카리오", types: ["fighting", "steel"], hp: 78, attack: 104, speed: 90, skill: 88, image: artwork(448), ability: { name: "정의의마음", description: "빈틈을 잡으면 더 강하게 몰아붙입니다.", isHidden: false }, summary: "공격과 속도의 균형이 좋은 올라운더 카드입니다." },
+  { id: 445, name: "한카리아스", types: ["dragon", "ground"], hp: 108, attack: 118, speed: 92, skill: 84, image: artwork(445), ability: { name: "까칠한피부", description: "정면 전투에서 효율적으로 맞교환합니다.", isHidden: false }, summary: "정면 승부에서 강하게 압박하는 돌격형 카드입니다." },
+  { id: 658, name: "개굴닌자", types: ["water", "dark"], hp: 72, attack: 95, speed: 122, skill: 90, image: artwork(658), ability: { name: "변환자재", description: "빠른 템포와 유연한 대응이 강점입니다.", isHidden: false }, summary: "빠른 템포와 유연한 대응이 강점인 고속 카드입니다." }
 ];
 
 const state = {
