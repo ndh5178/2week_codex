@@ -15,10 +15,17 @@
 
 ## 현재 포함된 기능
 
-- `features/pokedex`: 기존 포켓몬 도감 메인 기능
+- `features/pokedex`: 포켓몬 도감 메인 기능
+- `pokedex` 내부 추가 페이지
+  - `/pokedex/team-builder`: 스타일 기반 포켓몬 팀 빌더
+  - `/login`: Google OAuth 즉시 로그인 시작 경로
+  - `/login/setup`: Google OAuth 설정/오류 확인 페이지
 
 ## 실행 방법
 
-1. `.venv\Scripts\activate`
-2. `python app.py`
-3. `http://127.0.0.1:5000` 접속
+1. `venv\Scripts\Activate.ps1`
+2. `pip install -r requirements.txt`
+3. `.env.example`을 참고해 `.env` 작성
+4. `python app.py`
+5. `http://127.0.0.1:5000` 접속
+

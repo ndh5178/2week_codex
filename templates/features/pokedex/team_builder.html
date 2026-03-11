@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokemon Team Atelier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='features/pokedex/team_builder.css') }}">
+</head>
+<body class="builder-body">
+  <div class="builder-shell">
+    <header class="builder-hero">
+      <nav class="builder-topbar">
+        <a class="brand-link" href="{{ url_for('main.index') }}">
+          <span class="brand-ball"></span>
+          <span>Pokemon Team Atelier</span>
+        </a>
+        <div class="topbar-actions">
+          <a class="ghost-link" href="{{ url_for('main.index') }}">도감 홈</a>
+          {% if user %}
+          <a class="ghost-link" href="{{ url_for('pokedex.team_builder_page') }}">내 팀 빌더</a>
+          {% else %}
+          <a class="ghost-link" href="{{ url_for('pokedex.login_page', next=request.path) }}">Google 로그인</a>
+          {% endif %}
+        </div>
+      </nav>
+
+      <div class="hero-grid">
+        <section>
+          <p class="eyebrow">Smart Team Builder</p>
+          <h1>취향을 고르면<br>6마리 팀이 완성됩니다</h1>
+          <p class="hero-copy">
+            공격형, 귀여운 팀, 물 타입 중심 팀, 전설 제외, 초보자 추천까지.
+            PokeAPI 데이터를 기반으로 타입과 종족값을 읽고 자동으로 팀을 조합한 뒤 시너지 이유도 함께 설명합니다.
+          </p>
+          <div class="hero-actions">
+            <button class="primary-action" id="generateTeamButton" type="button">추천 팀 만들기</button>
+            <a class="secondary-action" href="#teamBoard">결과 보기</a>
+            {% if not user %}
+            <a class="secondary-action" href="{{ url_for('pokedex.login_page', next=request.path) }}">Google 로그인</a>
+            {% endif %}
+          </div>
+        </section>
+
+        <aside class="identity-card">
+          <p class="eyebrow">Trainer Identity</p>
+          {% if user %}
+          <div class="identity-row">
+            {% if user.picture %}
+            <img class="identity-avatar" src="{{ user.picture }}" alt="{{ user.name }} 프로필 이미지">
+            {% else %}
+            <div class="identity-avatar placeholder">{{ user.name[:1] }}</div>
+            {% endif %}
+            <div>
+              <strong>{{ user.name }}</strong>
+              <p>{{ user.email }}</p>
+            </div>
+          </div>
+          <p class="identity-note">로그인 상태라서 이후 팀 저장 기능을 붙이기 좋은 상태입니다.</p>
+          <form action="{{ url_for('pokedex.logout') }}" method="post">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="logout-button" type="submit">로그아웃</button>
+          </form>
+          {% else %}
+          <p class="identity-note">로그인 없이도 팀 추천은 가능하지만, Google 로그인까지 연결해 두면 다음 단계에서 팀 저장과 공유 기능을 붙이기 쉬워집니다.</p>
+          <a class="oauth-button {% if not google_oauth_configured %}is-disabled{% endif %}" href="{{ url_for('pokedex.google_login', next=request.path) if google_oauth_configured else url_for('pokedex.login_setup_page', next=request.path) }}">
+            Google로 시작하기
+          </a>
+          <p class="oauth-hint">
+            {% if google_oauth_configured %}
+            로그인 버튼을 누르면 바로 Google 인증 화면으로 이동합니다.
+            {% else %}
+            아직 `.env`에 Google Client ID / Secret이 비어 있습니다.
+            {% endif %}
+          </p>
+          {% endif %}
+        </aside>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <section class="flash-stack">
+        {% for category, message in messages %}
+        <article class="flash-card flash-{{ category }}">{{ message }}</article>
+        {% endfor %}
+      </section>
+      {% endif %}
+    {% endwith %}
+
+    <main class="builder-main">
+      <section class="selector-panel">
+        <div class="panel-heading">
+          <p class="eyebrow">Team Styles</p>
+          <h2>원하는 팀 방향을 선택하세요</h2>
+          <p>선택한 스타일에 맞춰 후보를 필터링하고, 약점 보완과 역할 분산을 고려해 6마리를 추천합니다.</p>
+        </div>
+
+        <div class="style-grid" id="styleGrid">
+          <button class="style-card is-active" type="button" data-style="offense">
+            <span class="style-tag">Aggro</span>
+            <strong>공격형 팀</strong>
+            <p>빠른 스피드와 높은 공격 지표를 우선시합니다.</p>
+          </button>
+          <button class="style-card" type="button" data-style="cute">
+            <span class="style-tag">Cute</span>
+            <strong>귀여운 팀</strong>
+            <p>친근한 이미지와 사랑스러운 타입 구성을 우선합니다.</p>
+          </button>
+          <button class="style-card" type="button" data-style="water">
+            <span class="style-tag">Water Core</span>
+            <strong>물 타입 중심 팀</strong>
+            <p>물 타입 코어를 중심으로 전기와 풀 약점을 보완합니다.</p>
+          </button>
+          <button class="style-card" type="button" data-style="no_legend">
+            <span class="style-tag">Fair Play</span>
+            <strong>전설 제외 팀</strong>
+            <p>전설과 환상을 빼고도 강한 밸런스를 만듭니다.</p>
+          </button>
+          <button class="style-card" type="button" data-style="beginner">
+            <span class="style-tag">Starter</span>
+            <strong>초보자 추천 팀</strong>
+            <p>운영이 직관적이고 역할이 분명한 조합을 추천합니다.</p>
+          </button>
+        </div>
+
+        <div class="status-strip">
+          <span class="status-dot"></span>
+          <p id="builderStatus">팀 빌더 준비 중입니다. 첫 추천을 눌러 주세요.</p>
+        </div>
+      </section>
+
+      <section class="results-panel" id="teamBoard">
+        <div class="results-header">
+          <div>
+            <p class="eyebrow">Build Result</p>
+            <h2 id="teamTitle">추천 팀을 기다리는 중</h2>
+          </div>
+          <div class="summary-badges" id="summaryBadges"></div>
+        </div>
+
+        <article class="insight-card">
+          <h3>팀 시너지 해설</h3>
+          <ul class="insight-list" id="insightList">
+            <li>스타일을 선택한 뒤 추천 팀 만들기를 누르면 시너지 설명이 여기에 표시됩니다.</li>
+          </ul>
+        </article>
+
+        <section class="team-grid" id="teamGrid" aria-live="polite"></section>
+      </section>
+    </main>
+  </div>
+
+  <template id="teamCardTemplate">
+    <article class="team-card">
+      <div class="team-card-top">
+        <span class="team-number"></span>
+        <div class="team-type-list"></div>
+      </div>
+      <div class="team-image-wrap">
+        <img class="team-image" alt="" loading="lazy">
+      </div>
+      <div class="team-card-body">
+        <h3 class="team-name"></h3>
+        <p class="team-role"></p>
+        <div class="stat-bars"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="{{ url_for('static', filename='features/pokedex/team_builder.js') }}"></script>
+</body>
+</html>

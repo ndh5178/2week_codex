@@ -1,142 +1,146 @@
 ﻿<div class="page-shell">
-    <header class="hero">
-      <nav class="topbar">
-        <div class="brand">
-          <span class="brand-ball"></span>
-          <span class="brand-text">Pokemon Dex Gallery</span>
-        </div>
-        <a class="top-link" href="#regions">포켓몬 도감 보기</a>
-      </nav>
-
-      <div class="hero-content">
-        <div class="hero-copy">
-          <p class="eyebrow">Today In Pokemon World</p>
-          <h1>오늘의 포켓몬과<br>포켓몬 도감</h1>
-          <p class="hero-text">
-            날짜에 따라 정해지는 오늘의 포켓몬을 보고, 아래에서는 포켓몬을 이미지와 함께 편하게 둘러볼 수 있어요.
-            카드 클릭 시 상세 정보 팝업도 바로 열리고, 일반 도감과 이로치 도감을 전환해서 볼 수 있습니다.
-          </p>
-          <div class="hero-actions">
-            <a class="primary-button" href="#today">오늘의 포켓몬 보기</a>
-            <a class="secondary-button" href="#regions">포켓몬 도감 보기</a>
-          </div>
-          <p class="hero-note" id="dataStatus">도감 데이터를 불러오는 중입니다...</p>
-        </div>
-
-        <section class="daily-panel" id="today" aria-live="polite">
-          <p class="section-label">Daily Pokemon</p>
-          <div class="daily-card loading" id="dailyPokemonCard">
-            <div class="daily-image-wrap skeleton-box"></div>
-            <div class="daily-info">
-              <div class="daily-line skeleton-line"></div>
-              <div class="daily-line short skeleton-line"></div>
-              <div class="daily-tags">
-                <span class="type-chip skeleton-chip"></span>
-                <span class="type-chip skeleton-chip"></span>
-              </div>
-              <div class="daily-desc skeleton-block"></div>
-            </div>
-          </div>
-        </section>
+  <header class="hero">
+    <nav class="topbar">
+      <div class="brand">
+        <span class="brand-ball"></span>
+        <span class="brand-text">Pokemon Dex Gallery</span>
       </div>
-    </header>
+      <div class="topbar-links">
+        <a class="top-link" href="{{ url_for('pokedex.team_builder_page') }}">팀 빌더 열기</a>
+        <a class="top-link" href="{{ url_for('pokedex.login_page', next=url_for('pokedex.team_builder_page')) }}">Google 로그인</a>
+        <a class="top-link" href="#regions">포켓몬 도감 보기</a>
+      </div>
+    </nav>
 
-    <main>
-      <section class="controls-panel" id="regions">
-        <div>
-          <p class="section-label">Pokedex</p>
-          <h2>포켓몬 도감</h2>
-          <p class="section-copy">원하는 포켓몬을 클릭해서 특성과 특성 설명까지 확인하세요.</p>
+    <div class="hero-content">
+      <div class="hero-copy">
+        <p class="eyebrow">Today In Pokemon World</p>
+        <h1>오늘의 포켓몬과<br>포켓몬 도감</h1>
+        <p class="hero-text">
+          날짜에 따라 정해지는 오늘의 포켓몬을 보고, 아래에서는 포켓몬을 이미지와 함께 편하게 둘러볼 수 있어요.
+          카드 클릭 시 상세 정보 팝업도 바로 열리고, 일반 도감과 이로치 도감을 전환해서 볼 수 있습니다.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#today">오늘의 포켓몬 보기</a>
+          <a class="secondary-button" href="#regions">포켓몬 도감 보기</a>
         </div>
+        <p class="hero-note" id="dataStatus">도감 데이터를 불러오는 중입니다...</p>
+      </div>
 
-        <div class="controls-row">
-          <label class="search-box control-item" for="searchInput">
-            <span class="search-label">검색</span>
-            <input id="searchInput" type="search" placeholder="한글 이름, 영문 이름, 도감 번호 입력" autocomplete="off">
-          </label>
-          <label class="filter-box control-item" for="typeFilter">
-            <span class="search-label">타입</span>
-            <select id="typeFilter">
-              <option value="">전체 타입</option>
-            </select>
-          </label>
-          <label class="filter-box control-item" for="regionFilter">
-            <span class="search-label">지역</span>
-            <select id="regionFilter">
-              <option value="">전체 지역</option>
-            </select>
-          </label>
-          <label class="filter-box control-item" for="formFilter">
-            <span class="search-label">폼</span>
-            <select id="formFilter">
-              <option value="all">전체</option>
-              <option value="base">기본만</option>
-              <option value="forms">폼</option>
-              <option value="mega">메가진화</option>
-              <option value="gmax">거다이맥스</option>
-            </select>
-          </label>
-          <div class="view-toggle control-item" role="group" aria-label="도감 모드 선택">
-            <span class="search-label">도감 모드</span>
-            <div class="toggle-buttons">
-              <button class="toggle-button is-active" id="normalDexButton" type="button">일반</button>
-              <button class="toggle-button" id="shinyDexButton" type="button">이로치</button>
+      <section class="daily-panel" id="today" aria-live="polite">
+        <p class="section-label">Daily Pokemon</p>
+        <div class="daily-card loading" id="dailyPokemonCard">
+          <div class="daily-image-wrap skeleton-box"></div>
+          <div class="daily-info">
+            <div class="daily-line skeleton-line"></div>
+            <div class="daily-line short skeleton-line"></div>
+            <div class="daily-tags">
+              <span class="type-chip skeleton-chip"></span>
+              <span class="type-chip skeleton-chip"></span>
             </div>
-          </div>
-          <div class="count-box control-item">
-            <span>표시 중</span>
-            <strong id="visibleCount">0</strong>
-            <span>/</span>
-            <strong id="totalCount">0</strong>
+            <div class="daily-desc skeleton-block"></div>
           </div>
         </div>
       </section>
+    </div>
+  </header>
 
-      <section class="regions-shell" id="regionSections" aria-live="polite"></section>
-    </main>
-  </div>
+  <main>
+    <section class="controls-panel" id="regions">
+      <div>
+        <p class="section-label">Pokedex</p>
+        <h2>포켓몬 도감</h2>
+        <p class="section-copy">원하는 포켓몬을 클릭해서 특성과 특성 설명까지 확인하세요.</p>
+      </div>
 
-  <template id="pokemonCardTemplate">
-    <article class="pokemon-card" tabindex="0" role="button">
-      <div class="pokemon-card-top">
-        <span class="pokemon-number"></span>
-      </div>
-      <div class="pokemon-image-wrap">
-        <img class="pokemon-image" alt="" loading="lazy">
-      </div>
-      <div class="pokemon-card-bottom">
-        <strong class="pokemon-korean-name"></strong>
-      </div>
-    </article>
-  </template>
-
-  <template id="regionSectionTemplate">
-    <section class="region-section">
-      <div class="region-heading">
-        <div>
-          <p class="section-label region-label"></p>
-          <h3 class="region-name"></h3>
-        </div>
-        <span class="region-count"></span>
-      </div>
-      <div class="region-grid"></div>
-    </section>
-  </template>
-
-  <div class="modal-backdrop is-hidden" id="pokemonModalBackdrop">
-    <div class="pokemon-modal" role="dialog" aria-modal="true" aria-labelledby="modalPokemonName">
-      <button class="modal-close" id="modalCloseButton" type="button" aria-label="팝업 닫기">×</button>
-      <div class="modal-body" id="modalBody">
-        <div class="modal-loading">
-          <div class="modal-image skeleton-box"></div>
-          <div class="modal-content">
-            <div class="daily-line skeleton-line"></div>
-            <div class="daily-line short skeleton-line"></div>
-            <div class="daily-desc skeleton-block"></div>
+      <div class="controls-row">
+        <label class="search-box control-item" for="searchInput">
+          <span class="search-label">검색</span>
+          <input id="searchInput" type="search" placeholder="한글 이름, 영문 이름, 도감 번호 입력" autocomplete="off">
+        </label>
+        <label class="filter-box control-item" for="typeFilter">
+          <span class="search-label">타입</span>
+          <select id="typeFilter">
+            <option value="">전체 타입</option>
+          </select>
+        </label>
+        <label class="filter-box control-item" for="regionFilter">
+          <span class="search-label">지역</span>
+          <select id="regionFilter">
+            <option value="">전체 지역</option>
+          </select>
+        </label>
+        <label class="filter-box control-item" for="formFilter">
+          <span class="search-label">폼</span>
+          <select id="formFilter">
+            <option value="all">전체</option>
+            <option value="base">기본만</option>
+            <option value="forms">폼</option>
+            <option value="mega">메가진화</option>
+            <option value="gmax">거다이맥스</option>
+          </select>
+        </label>
+        <div class="view-toggle control-item" role="group" aria-label="도감 모드 선택">
+          <span class="search-label">도감 모드</span>
+          <div class="toggle-buttons">
+            <button class="toggle-button is-active" id="normalDexButton" type="button">일반</button>
+            <button class="toggle-button" id="shinyDexButton" type="button">이로치</button>
           </div>
+        </div>
+        <div class="count-box control-item">
+          <span>표시 중</span>
+          <strong id="visibleCount">0</strong>
+          <span>/</span>
+          <strong id="totalCount">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="regions-shell" id="regionSections" aria-live="polite"></section>
+  </main>
+</div>
+
+<template id="pokemonCardTemplate">
+  <article class="pokemon-card" tabindex="0" role="button">
+    <div class="pokemon-card-top">
+      <span class="pokemon-number"></span>
+    </div>
+    <div class="pokemon-image-wrap">
+      <img class="pokemon-image" alt="" loading="lazy">
+    </div>
+    <div class="pokemon-card-bottom">
+      <strong class="pokemon-korean-name"></strong>
+    </div>
+  </article>
+</template>
+
+<template id="regionSectionTemplate">
+  <section class="region-section">
+    <div class="region-heading">
+      <div>
+        <p class="section-label region-label"></p>
+        <h3 class="region-name"></h3>
+      </div>
+      <span class="region-count"></span>
+    </div>
+    <div class="region-grid"></div>
+  </section>
+</template>
+
+<div class="modal-backdrop is-hidden" id="pokemonModalBackdrop">
+  <div class="pokemon-modal" role="dialog" aria-modal="true" aria-labelledby="modalPokemonName">
+    <button class="modal-close" id="modalCloseButton" type="button" aria-label="팝업 닫기">×</button>
+    <div class="modal-body" id="modalBody">
+      <div class="modal-loading">
+        <div class="modal-image skeleton-box"></div>
+        <div class="modal-content">
+          <div class="daily-line skeleton-line"></div>
+          <div class="daily-line short skeleton-line"></div>
+          <div class="daily-desc skeleton-block"></div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <script src="script.js"></script>
+
