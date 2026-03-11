@@ -2,9 +2,13 @@
 .DS_Store
 Thumbs.db
 
-# Node
+# Node / build
 node_modules/
 dist/
+.vite/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
 
 # Python
 __pycache__/
